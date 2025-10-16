@@ -1,16 +1,44 @@
 ﻿@{
     ViewData["Title"] = "Project Quiz Home Page";
 }
-<div class="hero-section">
-    <div class="text-center">
-        <h1 class="display-4">Welcome to Project Quiz</h1>
-        <div class="cta-section">
-            <a class="register-btn cta-btn" asp-controller="Account" asp-action="Register">
-            Get started
-            </a>
-            <a class="login-btn cta-btn" asp-controller="Account" asp-action="Login"> 
-            I already have an account
-            </a>
-        </div>
+<div class="hero-section text-center">
+    <h1 class="title">Welcome to Project Quiz</h1>
+    <img src="~/images/ProjectQuiz-hero-quiz.png" alt="Project Quiz Banner" class="hero-image" />
+    <p class="hero-subtext">Learning is fun with Project Quiz!</p>
+    <div class="cta-section">
+        <a class="register-btn cta-btn" asp-controller="Account" asp-action="Register">
+        Get started
+        </a>
+        <a class="login-btn cta-btn" asp-controller="Account" asp-action="Login"> 
+        I already have an account
+        </a>
+    </div>
+</div>
+<div class="about">
+<!-- EXAMPLE TEXT -->
+    <h2>About Project Quiz</h2>
+    <p>Project Quiz is an interactive platform designed to make learning fun and engaging through quizzes. Whether you're a student looking to test your knowledge or a teacher seeking to create interactive lessons, Project Quiz has got you covered!</p>
+    <h3>Features:</h3>
+    <ul>
+        <li>Create and take quizzes on various subjects.</li>
+        <li>Track your progress and performance over time.</li>
+        <li>Engage with a community of learners and educators.</li>
+    </ul>
+    <p>Join us today and start your journey towards knowledge with Project Quiz!</p>
+</div>
+<div class="features">
+<!-- EXAMPLE TEXT -->
+    <h2>Key Features</h2>
+    <div class="feature-item">
+        <h3>Interactive Quizzes</h3>
+        <p>Engage with a variety of quizzes that make learning fun and interactive.</p>
+    </div>
+    <div class="feature-item">
+        <h3>Progress Tracking</h3>
+        <p>Monitor your learning journey with detailed progress reports and analytics.</p>
+    </div>
+    <div class="feature-item">
+        <h3>Community Engagement</h3>
+        <p>Connect with other learners and educators to share knowledge and resources.</p>
     </div>
 </div>
