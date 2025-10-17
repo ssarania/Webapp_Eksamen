@@ -9,6 +9,12 @@ Gruppemedlemmer:
 - Danny Pham, dapha0157
 - Tuong Vy Tabigne Nguyen, tungu2400
 
+## Node version
+v22.19.0
+
+## How to start the app
+
+
 ## Backend API
 
 The MVC project has been refactored into a token-based Web API that supports quiz authoring, taking, and tracking user progress.
