@@ -1,0 +1,21 @@
+@model BasicProject.Data.Entities.User
+
+@{
+    ViewData["Title"] = "Create User";
+}
+
+<div class="container mt-4">
+    <h2>Create User</h2>
+
+    <form asp-action="Create" method="post">
+        <div class="mb-3">
+            <label asp-for="Name" class="form-label"></label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+        <button type="submit" class="btn btn-primary">Create</button>
+        <a class="btn btn-secondary" href="@Url.Action("Index")">Back</a>
+    </form>
+
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+</div>

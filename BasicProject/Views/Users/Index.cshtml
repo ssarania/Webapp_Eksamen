@@ -1,0 +1,35 @@
+@model IEnumerable<BasicProject.Data.Entities.User>
+
+@{
+    ViewData["Title"] = "Users";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Users</h2>
+        <a class="btn btn-primary" href="@Url.Action("Create")">Create User</a>
+    </div>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var user in Model)
+        {
+            <tr>
+                <td>@user.Id</td>
+                <td>@user.Name</td>
+                <td>
+                    <a class="btn btn-sm btn-secondary" href="@Url.Action("Edit", new { id = user.Id })">Edit</a>
+                    <a class="btn btn-sm btn-danger" href="@Url.Action("Delete", new { id = user.Id })">Delete</a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
