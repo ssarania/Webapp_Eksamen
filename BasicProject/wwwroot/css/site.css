@@ -166,3 +166,48 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+/*Register-siden */
+body { 
+   /* font-family: "Poppins", sans-serif; */
+    background:#ebf1ff;
+    justify-content: center;
+}
+
+
+h1 { /*Overskriften til Create an account */
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: #333;
+}
+
+label { /*Inputnavnene*/
+    font-weight: 450;
+    margin-top: 10px;
+    display: block;
+}
+
+input { /*Boksene for input*/
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    outline: none;
+    border-radius: 7px;
+    transition: border-color 0.2s;
+}
+
+.btn { /*Knappen for register*/
+    width: 100%;
+    padding: 10px;
+    background: #728ef3;
+    color: white;
+    margin-top: 15px;
+    font-size: 16px;
+    border-radius: 7px;
+    transition: background 0.3s;
+}
+
+.btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
