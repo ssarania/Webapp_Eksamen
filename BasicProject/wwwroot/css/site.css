@@ -86,6 +86,78 @@ html {
     background-color:rgb(214, 223, 228);
 }
 
+/* Dashboard/Profile */
+.profile-page {
+    padding: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.profile-header h1 {
+    margin-bottom: 40px;
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+/* MAIN FLEX CONTAINER */
+.profile-container {
+    display: flex;
+    flex-direction: row;        /* ensure horizontal layout */
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 40px;
+}
+
+/* LEFT SIDE: Account info */
+.account-section {
+    flex: 1;                    /* take remaining width */
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* RIGHT SIDE: Profile card */
+.profile-card {
+    width: 320px;               /* fixed width */
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.account-details {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.account-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.signout-btn {
+    background-color: #dc3545;
+}
+
+.signout-btn:hover {
+    background-color: #b02a37;
+}
+
+/* Responsive: stack on smaller screens */
+@media (max-width: 768px) {
+    .profile-container {
+        flex-direction: column;
+    }
+
+    .profile-card {
+        width: 100%;
+    }
+}
+
+
 html {
   position: relative;
   min-height: 100%;

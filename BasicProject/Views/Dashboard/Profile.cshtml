@@ -1,0 +1,26 @@
+@{
+    ViewData["Title"] = "User Profile";
+}
+<div class="profile-page">
+    <div class="profile-header text-center">
+        <h1>@ViewData["Username"]'s Profile</h1>
+    </div>
+<div class="profile-container">
+    <div class="account-section">
+        <div class="acccount-details">
+            <h1>Account Details</h1>
+            <p>Name: @ViewData["UserFullname"]</p>
+            <p>Email: @ViewData["UserEmail"]</p>
+            <p>Phone number: @ViewData["UserPhonenumber"]</p>
+            <p>Member since: @ViewData["MemberSince"]</p>
+        </div>
+        <div class="account-actions">
+            <a class="cta-btn" asp-controller="" asp-action="Settings">Settings</a>
+            <a class="cta-btn" asp-controller="" asp-action="">Sign Out</a>
+        </div>
+    </div>
+    <div class="profile-card">
+        <p>Quizzes taken: </p>
+        <p>Quizzes created: </p>
+    </div>
+</div>

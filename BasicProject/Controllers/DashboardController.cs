@@ -6,6 +6,15 @@ namespace BasicProject.Controllers
     {
         public IActionResult Index()
         {
+            string userName = "Guest";
+            ViewData["Username"] = userName;
+            return View();
+        }
+
+        public IActionResult Profile()
+        {
+            string userName = "Guest";
+            ViewData["Username"] = userName;
             return View();
         }
     }

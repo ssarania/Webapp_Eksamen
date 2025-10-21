@@ -1,5 +1,12 @@
 @{
     ViewData["Title"] = "Project Quiz Dashboard";
 }
-<h1>Dashboard</h1>
+<h1>Welcome, @ViewData["Username"]!</h1>
 <p>You are now logged in</p>
+
+<p>Browse Quizzes!</p>
+<p>Your library (Carousel?: Shows recent taken quizzes, created quizzes)</p>
+
+<a class="profile-btn cta-btn" asp-controller="Dashboard" asp-action="Profile">
+Go to profile
+</a>
