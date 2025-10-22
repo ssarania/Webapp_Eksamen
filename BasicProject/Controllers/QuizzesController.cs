@@ -122,4 +122,40 @@ public class QuizzesController : Controller
             return View(quiz);
         }
     }
+
+    // 👇 NY METODE: brukes når brukeren fullfører en quiz
+    [HttpPost]
+    public async Task<IActionResult> SubmitQuiz(int quizId, int userId, List<int> selectedOptionIds)
+    {
+        var quiz = await _context.Quizzes
+            .Include(q => q.Questions)
+            .ThenInclude(q => q.Options)
+            .FirstOrDefaultAsync(q => q.Id == quizId);
+
+        if (quiz == null) return NotFound();
+
+        int correctAnswers = 0;
+
+        foreach (var question in quiz.Questions)
+        {
+            var correctOption = question.Options.FirstOrDefault(o => o.IsCorrect);
+            if (correctOption != null && selectedOptionIds.Contains(correctOption.Id))
+                correctAnswers++;
+        }
+
+        var attempt = new Attempt
+        {
+            QuizId = quizId,
+            UserId = userId,
+            Score = correctAnswers,
+            TotalQuestions = quiz.Questions.Count,
+            AttemptedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow
+        };
+
+        _context.Attempts.Add(attempt);
+        await _context.SaveChangesAsync();
+
+        return RedirectToAction(nameof(Index)); // eller til en "Result" view hvis du har det
+    }
 }
