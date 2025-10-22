@@ -2,6 +2,7 @@ using BasicProject.Data;
 using BasicProject.Data.Entities;
 using BasicProject.Data.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace BasicProject.Controllers;
 
@@ -22,7 +23,11 @@ public class QuizzesController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var list = await _quizzes.GetAllAsync();
+        var list = await _context.Quizzes
+            .Include(q => q.Author)
+            .Include(q => q.Questions)
+            .Include(q => q.Attempts)
+            .ToListAsync();
         return View(list);
     }
 

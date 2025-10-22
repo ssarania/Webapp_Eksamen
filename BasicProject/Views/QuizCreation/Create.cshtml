@@ -1,0 +1,361 @@
+@{
+    ViewData["Title"] = "Create Quiz";
+    var users = ViewBag.Users as IEnumerable<BasicProject.Data.Entities.User>;
+}
+
+<div class="container mt-4">
+    <h2>Create New Quiz</h2>
+    <p class="text-muted">Fill in the details below to create your quiz. Each question must have 2-4 options with exactly one correct answer.</p>
+
+    <form id="quizForm">
+        <!-- Basic Details Section -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Quiz Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="quizTitle" class="form-label">Quiz Title <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="quizTitle" required maxlength="200" placeholder="Enter quiz title">
+                    <div class="invalid-feedback">Please provide a quiz title.</div>
+                </div>
+                <div class="mb-3">
+                    <label for="quizDescription" class="form-label">Description</label>
+                    <textarea class="form-control" id="quizDescription" rows="3" placeholder="Optional description"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="authorId" class="form-label">Author <span class="text-danger">*</span></label>
+                    <select class="form-select" id="authorId" required>
+                        <option value="">Select an author...</option>
+                        @if (users != null)
+                        {
+                            @foreach (var user in users)
+                            {
+                                <option value="@user.Id">@user.Name</option>
+                            }
+                        }
+                    </select>
+                    <div class="invalid-feedback">Please select an author.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Questions Section -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Questions</h5>
+            </div>
+            <div class="card-body">
+                <div id="questionsContainer">
+                    <!-- Questions will be added here dynamically -->
+                </div>
+                <button type="button" class="btn btn-outline-success btn-sm mt-3" id="addQuestionBtn">
+                    <i class="bi bi-plus-circle"></i> Add Question
+                </button>
+            </div>
+        </div>
+
+        <!-- Submit Section -->
+        <div class="d-flex justify-content-between mb-4">
+            <a href="@Url.Action("Index", "Home")" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                <span id="submitText">Create Quiz</span>
+                <span id="submitSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+            </button>
+        </div>
+    </form>
+
+    <!-- Validation Messages -->
+    <div id="errorAlert" class="alert alert-danger d-none" role="alert">
+        <strong>Error:</strong> <span id="errorMessage"></span>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let questionCounter = 0;
+
+        // Add first question on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            addQuestion();
+        });
+
+        // Add Question Button
+        document.getElementById('addQuestionBtn').addEventListener('click', function() {
+            addQuestion();
+        });
+
+        function addQuestion() {
+            questionCounter++;
+            const questionId = questionCounter;
+            
+            const questionHtml = `
+                <div class="question-block card mb-3" data-question-id="${questionId}">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Question ${questionId}</h6>
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-question-btn w-25" onclick="removeQuestion(${questionId})" title="Remove Question">
+                            <i class="bi bi-x-lg"></i> Remove question
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Question Text <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control question-text" required maxlength="500" placeholder="Enter your question">
+                            <div class="invalid-feedback">Please provide a question.</div>
+                        </div>
+                        
+                        <label class="form-label">Answer Options (2-4 required) <span class="text-danger">*</span></label>
+                        <div class="options-container" data-question-id="${questionId}">
+                            <!-- Options will be added here -->
+                        </div>
+                        
+                        <button type="button" class="btn btn-sm btn-outline-success add-option-btn" onclick="addOption(${questionId})">
+                            + Add Option
+                        </button>
+                        <small class="text-muted d-block mt-2">Check one option as the correct answer. You can have 2-4 options per question.</small>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('questionsContainer').insertAdjacentHTML('beforeend', questionHtml);
+            
+            // Add initial 2 options
+            addOption(questionId);
+            addOption(questionId);
+        }
+
+        function removeQuestion(questionId) {
+            const questionBlock = document.querySelector(`[data-question-id="${questionId}"]`);
+            if (questionBlock) {
+                // Check if it's the last question
+                const totalQuestions = document.querySelectorAll('.question-block').length;
+                if (totalQuestions <= 1) {
+                    alert('You must have at least one question!');
+                    return;
+                }
+                questionBlock.remove();
+                renumberQuestions();
+            }
+        }
+
+        function renumberQuestions() {
+            const questions = document.querySelectorAll('.question-block');
+            questions.forEach((q, index) => {
+                q.querySelector('h6').textContent = `Question ${index + 1}`;
+            });
+        }
+
+        function addOption(questionId) {
+            const container = document.querySelector(`.options-container[data-question-id="${questionId}"]`);
+            const optionCount = container.querySelectorAll('.option-row').length;
+            
+            if (optionCount >= 4) {
+                alert('Maximum 4 options per question!');
+                return;
+            }
+            
+            const optionId = Date.now() + Math.random();
+            const optionHtml = `
+                <div class="option-row input-group mb-2" data-option-id="${optionId}">
+					<div class="d-flex align-items-center w-100">
+						<div class="input-group-text h-100">
+							<input class="form-check-input mt-0 correct-checkbox" type="checkbox" onchange="handleCorrectChange(this, ${questionId})">
+						</div>
+						<input type="text" class="form-control option-text h-100" required maxlength="300" placeholder="Enter option text">
+						<button type="button" class="btn btn-outline-danger w-25 h-100 m-0" onclick="removeOption(${questionId}, ${optionId})" ${optionCount < 2 ? 'disabled' : ''}>
+							Remove
+						</button>
+					</div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', optionHtml);
+            updateRemoveButtons(questionId);
+        }
+
+        function removeOption(questionId, optionId) {
+            const container = document.querySelector(`.options-container[data-question-id="${questionId}"]`);
+            const optionCount = container.querySelectorAll('.option-row').length;
+            
+            if (optionCount <= 2) {
+                alert('Each question must have at least 2 options!');
+                return;
+            }
+            
+            const optionRow = container.querySelector(`[data-option-id="${optionId}"]`);
+            if (optionRow) {
+                optionRow.remove();
+                updateRemoveButtons(questionId);
+            }
+        }
+
+        function updateRemoveButtons(questionId) {
+            const container = document.querySelector(`.options-container[data-question-id="${questionId}"]`);
+            const optionCount = container.querySelectorAll('.option-row').length;
+            const removeButtons = container.querySelectorAll('.btn-outline-danger');
+            
+            removeButtons.forEach(btn => {
+                btn.disabled = optionCount <= 2;
+            });
+        }
+
+        function handleCorrectChange(checkbox, questionId) {
+            if (checkbox.checked) {
+                // Uncheck all other checkboxes in this question
+                const container = document.querySelector(`.options-container[data-question-id="${questionId}"]`);
+                const allCheckboxes = container.querySelectorAll('.correct-checkbox');
+                allCheckboxes.forEach(cb => {
+                    if (cb !== checkbox) {
+                        cb.checked = false;
+                    }
+                });
+            }
+        }
+
+        // Form Submission
+        document.getElementById('quizForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Hide previous errors
+            document.getElementById('errorAlert').classList.add('d-none');
+            
+            // Validate form
+            if (!this.checkValidity()) {
+                e.stopPropagation();
+                this.classList.add('was-validated');
+                return;
+            }
+            
+            // Build quiz data
+            const quizData = {
+                title: document.getElementById('quizTitle').value.trim(),
+                description: document.getElementById('quizDescription').value.trim() || null,
+                authorId: parseInt(document.getElementById('authorId').value),
+                questions: []
+            };
+            
+            // Collect questions
+            const questionBlocks = document.querySelectorAll('.question-block');
+            let isValid = true;
+            let errorMsg = '';
+            
+            questionBlocks.forEach((block, qIndex) => {
+                const questionText = block.querySelector('.question-text').value.trim();
+                const optionsContainer = block.querySelector('.options-container');
+                const optionRows = optionsContainer.querySelectorAll('.option-row');
+                
+                const options = [];
+                let hasCorrect = false;
+                
+                optionRows.forEach(row => {
+                    const text = row.querySelector('.option-text').value.trim();
+                    const isCorrect = row.querySelector('.correct-checkbox').checked;
+                    
+                    if (text) {
+                        options.push({ text, isCorrect });
+                        if (isCorrect) hasCorrect = true;
+                    }
+                });
+                
+                // Validate question
+                if (options.length < 2) {
+                    isValid = false;
+                    errorMsg = `Question ${qIndex + 1} must have at least 2 options.`;
+                } else if (options.length > 4) {
+                    isValid = false;
+                    errorMsg = `Question ${qIndex + 1} can have maximum 4 options.`;
+                } else if (!hasCorrect) {
+                    isValid = false;
+                    errorMsg = `Question ${qIndex + 1} must have exactly one correct answer. Please check one option.`;
+                } else if (options.filter(o => o.isCorrect).length > 1) {
+                    isValid = false;
+                    errorMsg = `Question ${qIndex + 1} can only have one correct answer.`;
+                }
+                
+                if (isValid) {
+                    quizData.questions.push({
+                        text: questionText,
+                        options: options
+                    });
+                }
+            });
+            
+            if (!isValid) {
+                showError(errorMsg);
+                return;
+            }
+            
+            if (quizData.questions.length === 0) {
+                showError('You must add at least one question!');
+                return;
+            }
+            
+            // Submit to API
+            try {
+                showLoading(true);
+                
+                const response = await fetch('/api/QuizzesApi', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(quizData)
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to create quiz');
+                }
+                
+                const result = await response.json();
+                
+                // Redirect to success page
+                window.location.href = `/QuizCreation/Success/${result.id}`;
+                
+            } catch (error) {
+                showError(error.message);
+                showLoading(false);
+            }
+        });
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            document.getElementById('errorAlert').classList.remove('d-none');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showLoading(isLoading) {
+            document.getElementById('submitBtn').disabled = isLoading;
+            document.getElementById('submitText').classList.toggle('d-none', isLoading);
+            document.getElementById('submitSpinner').classList.toggle('d-none', !isLoading);
+        }
+    </script>
+
+    <style>
+        .question-block {
+            border-left: 4px solid #28a745;
+        }
+        .option-row .input-group-text {
+            cursor: pointer;
+        }
+        .was-validated .form-control:invalid {
+            border-color: #dc3545;
+        }
+        .was-validated .form-control:valid {
+            border-color: #28a745;
+        }
+        .remove-question-btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            line-height: 1;
+        }
+        .remove-question-btn i {
+            font-size: 0.75rem;
+        }
+        #addQuestionBtn {
+            display: block;
+            width: auto;
+            margin: 0 auto;
+        }
+    </style>
+}

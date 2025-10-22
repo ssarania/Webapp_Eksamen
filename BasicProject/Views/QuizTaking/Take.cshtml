@@ -1,0 +1,387 @@
+@{
+    ViewData["Title"] = "Take Quiz";
+    var quizId = ViewBag.QuizId;
+    var quizTitle = ViewBag.QuizTitle;
+    var quizDescription = ViewBag.QuizDescription;
+    var authorName = ViewBag.AuthorName;
+    var totalQuestions = ViewBag.TotalQuestions;
+}
+
+<div class="container mt-4">
+    <!-- Quiz Info Header -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">@quizTitle</h3>
+        </div>
+        <div class="card-body">
+            @if (!string.IsNullOrEmpty(quizDescription))
+            {
+                <p class="mb-2">@quizDescription</p>
+            }
+            <p class="text-muted mb-0">
+                <i class="bi bi-person"></i> Created by @authorName | 
+                <i class="bi bi-question-circle"></i> @totalQuestions Question@(totalQuestions != 1 ? "s" : "")
+            </p>
+        </div>
+    </div>
+
+    <!-- User Selection -->
+    <div id="userSelectionSection" class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Before You Start</h5>
+        </div>
+        <div class="card-body">
+            <p>Please select or create a user to track your attempt:</p>
+            <div class="mb-3">
+                <label for="userId" class="form-label">Select User <span class="text-danger">*</span></label>
+                <select class="form-select" id="userId" required>
+                    <option value="">Loading users...</option>
+                </select>
+            </div>
+            <button type="button" class="btn btn-primary" id="startQuizBtn">
+                <i class="bi bi-play-circle"></i> Start Quiz
+            </button>
+        </div>
+    </div>
+
+    <!-- Quiz Section (Hidden Initially) -->
+    <div id="quizSection" class="d-none">
+        <!-- Progress Bar -->
+        <div class="mb-4">
+            <div class="d-flex justify-content-between mb-2">
+                <span>Question <span id="currentQuestionNum">1</span> of @totalQuestions</span>
+                <span><span id="answeredCount">0</span> answered</span>
+            </div>
+            <div class="progress" style="height: 25px;">
+                <div id="progressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <span id="progressText">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question Card -->
+        <div class="card mb-4" id="questionCard">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Question <span id="questionNumber">1</span></h5>
+            </div>
+            <div class="card-body">
+                <h5 id="questionText" class="mb-4"></h5>
+                <div id="optionsContainer">
+                    <!-- Options will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="d-flex justify-content-between mb-4">
+            <button type="button" class="btn btn-secondary" id="previousBtn" disabled>
+                <i class="bi bi-arrow-left"></i> Previous
+            </button>
+            <button type="button" class="btn btn-primary" id="nextBtn" disabled>
+                Next <i class="bi bi-arrow-right"></i>
+            </button>
+            <button type="button" class="btn btn-success d-none" id="submitQuizBtn">
+                <i class="bi bi-check-circle"></i> Submit Quiz
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="text-center d-none">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3">Submitting your answers...</p>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let quizData = null;
+        let currentQuestionIndex = 0;
+        let userAnswers = {}; // Store answers as { questionId: optionId }
+        let selectedUserId = null;
+
+        // Load users on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadUsers();
+        });
+
+        // Load users from API
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/UsersApi');
+                if (!response.ok) throw new Error('Failed to load users');
+                
+                const users = await response.json();
+                const userSelect = document.getElementById('userId');
+                userSelect.innerHTML = '<option value="">Select a user...</option>';
+                
+                users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = user.name;
+                    userSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('userId').innerHTML = '<option value="">Error loading users</option>';
+            }
+        }
+
+        // Start quiz button
+        document.getElementById('startQuizBtn').addEventListener('click', async function() {
+            selectedUserId = document.getElementById('userId').value;
+            if (!selectedUserId) {
+                alert('Please select a user');
+                return;
+            }
+
+            await loadQuiz();
+        });
+
+        // Load quiz data
+        async function loadQuiz() {
+            try {
+                const response = await fetch('/api/QuizzesApi/@quizId?includeAnswers=false');
+                if (!response.ok) throw new Error('Failed to load quiz');
+                
+                quizData = await response.json();
+                
+                // Sort questions by order
+                quizData.questions.sort((a, b) => a.order - b.order);
+                
+                // Hide user selection, show quiz
+                document.getElementById('userSelectionSection').classList.add('d-none');
+                document.getElementById('quizSection').classList.remove('d-none');
+                
+                // Load first question
+                loadQuestion(0);
+            } catch (error) {
+                console.error('Error loading quiz:', error);
+                alert('Failed to load quiz. Please try again.');
+            }
+        }
+
+        // Load a specific question
+        function loadQuestion(index) {
+            currentQuestionIndex = index;
+            const question = quizData.questions[index];
+            
+            // Update question text
+            document.getElementById('questionNumber').textContent = index + 1;
+            document.getElementById('currentQuestionNum').textContent = index + 1;
+            document.getElementById('questionText').textContent = question.text;
+            
+            // Load options
+            const optionsContainer = document.getElementById('optionsContainer');
+            optionsContainer.innerHTML = '';
+            
+            question.options.forEach(option => {
+                const isSelected = userAnswers[question.id] === option.id;
+                
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'form-check mb-3 p-3 border rounded option-item';
+                optionDiv.style.cursor = 'pointer';
+                if (isSelected) {
+                    optionDiv.classList.add('border-primary', 'bg-light');
+                }
+                
+                optionDiv.innerHTML = `
+                    <input class="form-check-input" type="radio" name="answer" id="option${option.id}" 
+                           value="${option.id}" ${isSelected ? 'checked' : ''}>
+                    <label class="form-check-label w-100" for="option${option.id}" style="cursor: pointer;">
+                        ${option.text}
+                    </label>
+                `;
+                
+                // Make entire div clickable
+                optionDiv.addEventListener('click', function(e) {
+                    if (e.target.tagName !== 'INPUT') {
+                        const radio = this.querySelector('input[type="radio"]');
+                        radio.checked = true;
+                        selectOption(question.id, option.id);
+                    } else {
+                        selectOption(question.id, option.id);
+                    }
+                });
+                
+                optionsContainer.appendChild(optionDiv);
+            });
+            
+            // Update navigation buttons
+            updateNavigationButtons();
+            updateProgress();
+        }
+
+        // Select an option
+        function selectOption(questionId, optionId) {
+            userAnswers[questionId] = optionId;
+            
+            // Update UI
+            const allOptions = document.querySelectorAll('.option-item');
+            allOptions.forEach(opt => {
+                opt.classList.remove('border-primary', 'bg-light');
+            });
+            
+            const selectedOption = document.querySelector(`#option${optionId}`).closest('.option-item');
+            selectedOption.classList.add('border-primary', 'bg-light');
+            
+            // Update navigation buttons (this will enable next/submit based on current question)
+            updateNavigationButtons();
+            updateProgress();
+        }
+
+        // Update navigation buttons
+        function updateNavigationButtons() {
+            const prevBtn = document.getElementById('previousBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const submitBtn = document.getElementById('submitQuizBtn');
+            
+            console.log('Updating navigation buttons - Current index:', currentQuestionIndex, 'Total questions:', quizData.questions.length);
+            
+            // Previous button
+            prevBtn.disabled = currentQuestionIndex === 0;
+            
+            // Check if current question is answered
+            const currentQuestion = quizData.questions[currentQuestionIndex];
+            const isAnswered = userAnswers.hasOwnProperty(currentQuestion.id);
+            
+            console.log('Current question answered:', isAnswered);
+            
+            // Next/Submit button logic
+            if (currentQuestionIndex === quizData.questions.length - 1) {
+                // Last question - show submit button
+                console.log('On last question - showing submit button');
+                nextBtn.classList.add('d-none');
+                submitBtn.classList.remove('d-none');
+                
+                // Explicitly enable the submit button
+                submitBtn.disabled = false;
+                submitBtn.removeAttribute('disabled');
+                
+                console.log('Submit button disabled state:', submitBtn.disabled);
+            } else {
+                // Not last question - show next button
+                console.log('Not on last question - showing next button');
+                nextBtn.classList.remove('d-none');
+                submitBtn.classList.add('d-none');
+                nextBtn.disabled = !isAnswered;
+            }
+        }
+
+        // Update progress bar
+        function updateProgress() {
+            const answeredCount = Object.keys(userAnswers).length;
+            const totalQuestions = quizData.questions.length;
+            const percentage = Math.round((answeredCount / totalQuestions) * 100);
+            
+            document.getElementById('answeredCount').textContent = answeredCount;
+            document.getElementById('progressBar').style.width = percentage + '%';
+            document.getElementById('progressBar').setAttribute('aria-valuenow', percentage);
+            document.getElementById('progressText').textContent = percentage + '%';
+        }
+
+        // Previous button
+        document.getElementById('previousBtn').addEventListener('click', function() {
+            if (currentQuestionIndex > 0) {
+                loadQuestion(currentQuestionIndex - 1);
+            }
+        });
+
+        // Next button
+        document.getElementById('nextBtn').addEventListener('click', function() {
+            if (currentQuestionIndex < quizData.questions.length - 1) {
+                loadQuestion(currentQuestionIndex + 1);
+            }
+        });
+
+        // Submit quiz
+        document.getElementById('submitQuizBtn').addEventListener('click', async function() {
+            // Check if all questions are answered
+            if (Object.keys(userAnswers).length < quizData.questions.length) {
+                const unanswered = quizData.questions.length - Object.keys(userAnswers).length;
+                if (!confirm(`You have ${unanswered} unanswered question(s). Submit anyway?`)) {
+                    return;
+                }
+            }
+
+            // Show loading
+            document.getElementById('quizSection').classList.add('d-none');
+            document.getElementById('loadingSpinner').classList.remove('d-none');
+
+            try {
+                // Prepare submission data - include ALL questions, even unanswered ones
+                const submitData = {
+                    quizId: @quizId,
+                    userId: parseInt(selectedUserId),
+                    answers: quizData.questions.map(q => ({
+                        questionId: q.id,
+                        selectedOptionId: userAnswers[q.id] || q.options[0].id // Use first option if unanswered
+                    }))
+                };
+
+                console.log('Submitting data:', submitData); // Debug log
+
+                const response = await fetch('/api/AttemptsApi', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(submitData)
+                });
+
+                console.log('Response status:', response.status); // Debug log
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    console.error('Error response:', error); // Debug log
+                    throw new Error(error.error || 'Failed to submit quiz');
+                }
+
+                const result = await response.json();
+                console.log('Result:', result); // Debug log
+                
+                // Get attempt ID (check both lowercase and uppercase)
+                const attemptId = result.id || result.Id;
+                
+                if (!attemptId) {
+                    console.error('No attempt ID in response:', result);
+                    throw new Error('Failed to get attempt ID from server');
+                }
+                
+                console.log('Redirecting to results for attempt:', attemptId);
+                
+                // Redirect to results page
+                window.location.href = `/QuizTaking/Results/${attemptId}`;
+
+            } catch (error) {
+                console.error('Error submitting quiz:', error);
+                alert('Failed to submit quiz: ' + error.message);
+                document.getElementById('quizSection').classList.remove('d-none');
+                document.getElementById('loadingSpinner').classList.add('d-none');
+            }
+        });
+    </script>
+
+    <style>
+        .option-item {
+            transition: all 0.2s ease;
+        }
+        .option-item:hover {
+            background-color: #f8f9fa !important;
+            border-color: #0d6efd !important;
+        }
+        .form-check-input {
+            cursor: pointer;
+            margin-top: 0.5em;
+        }
+        .form-check-label {
+            font-size: 1.1rem;
+        }
+        #progressBar {
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+    </style>
+}

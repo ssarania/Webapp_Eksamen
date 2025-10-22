@@ -1,0 +1,173 @@
+@{
+    ViewData["Title"] = "Quiz Created Successfully";
+    var quizId = ViewBag.QuizId;
+    var quizTitle = ViewBag.QuizTitle;
+    var quizDescription = ViewBag.QuizDescription;
+    var authorName = ViewBag.AuthorName;
+    var questionCount = ViewBag.QuestionCount;
+    var shareLink = ViewBag.ShareLink;
+    var apiLink = ViewBag.ApiLink;
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Success Message -->
+            <div class="alert alert-success text-center" role="alert">
+                <h4 class="alert-heading">
+                    <i class="bi bi-check-circle-fill"></i> Quiz Created Successfully!
+                </h4>
+                <p class="mb-0">Your quiz has been created and is ready to share.</p>
+            </div>
+
+            <!-- Quiz Details Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Quiz Details</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-3">Title:</dt>
+                        <dd class="col-sm-9"><strong>@quizTitle</strong></dd>
+
+                        @if (!string.IsNullOrEmpty(quizDescription))
+                        {
+                            <dt class="col-sm-3">Description:</dt>
+                            <dd class="col-sm-9">@quizDescription</dd>
+                        }
+
+                        <dt class="col-sm-3">Author:</dt>
+                        <dd class="col-sm-9">@authorName</dd>
+
+                        <dt class="col-sm-3">Questions:</dt>
+                        <dd class="col-sm-9">@questionCount</dd>
+
+                        <dt class="col-sm-3">Quiz ID:</dt>
+                        <dd class="col-sm-9"><code>@quizId</code></dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Share Links Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Share Your Quiz</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Quiz Taking Link -->
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Quiz Link (for taking):</strong></label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="quizLink" value="@shareLink" readonly>
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('quizLink', 'quizLinkCopied')">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                        </div>
+                        <small id="quizLinkCopied" class="text-success d-none">✓ Copied to clipboard!</small>
+                    </div>
+
+                    <!-- API Link -->
+                    <div class="mb-3">
+                        <label class="form-label"><strong>API Endpoint:</strong></label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="apiLink" value="@apiLink" readonly>
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('apiLink', 'apiLinkCopied')">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                        </div>
+                        <small id="apiLinkCopied" class="text-success d-none">✓ Copied to clipboard!</small>
+                        <small class="text-muted d-block mt-1">Use this endpoint to retrieve quiz data via API</small>
+                    </div>
+
+                    <!-- Social Share Buttons -->
+                    <div class="mt-4">
+                        <p class="mb-2"><strong>Share on:</strong></p>
+                        <div class="btn-group" role="group">
+                            <a href="https://twitter.com/intent/tweet?text=Check out this quiz: @quizTitle&url=@shareLink" 
+                               target="_blank" 
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-twitter"></i> Twitter
+                            </a>
+                            <a href="https://www.facebook.com/sharer/sharer.php?u=@shareLink" 
+                               target="_blank" 
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-facebook"></i> Facebook
+                            </a>
+                            <a href="mailto:?subject=Take this quiz: @quizTitle&body=Check out this quiz: @shareLink" 
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-envelope"></i> Email
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-grid gap-2 d-md-flex justify-content-md-between mb-4">
+                <a href="@Url.Action("Create", "QuizCreation")" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> Create Another Quiz
+                </a>
+                <div>
+                    <a href="/api/QuizzesApi/@quizId" target="_blank" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-code-square"></i> View in API
+                    </a>
+                    <a href="@Url.Action("Index", "Quizzes")" class="btn btn-primary">
+                        <i class="bi bi-list-ul"></i> View All Quizzes
+                    </a>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h6 class="mb-0">What's Next?</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Share the quiz link with your friends or students</li>
+                        <li>View quiz attempts and results at <code>/api/AttemptsApi?quizId=@quizId</code></li>
+                        <li>Check the leaderboard at <code>/api/AttemptsApi/leaderboard/@quizId</code></li>
+                        <li>Use Swagger UI to test all endpoints: <a href="/swagger" target="_blank">/swagger</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function copyToClipboard(inputId, feedbackId) {
+            const input = document.getElementById(inputId);
+            const feedback = document.getElementById(feedbackId);
+            
+            // Select and copy
+            input.select();
+            input.setSelectionRange(0, 99999); // For mobile devices
+            
+            navigator.clipboard.writeText(input.value).then(() => {
+                // Show feedback
+                feedback.classList.remove('d-none');
+                
+                // Hide after 2 seconds
+                setTimeout(() => {
+                    feedback.classList.add('d-none');
+                }, 2000);
+            }).catch(err => {
+                alert('Failed to copy: ' + err);
+            });
+        }
+    </script>
+
+    <style>
+        .card {
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        .input-group input[readonly] {
+            background-color: #f8f9fa;
+        }
+    </style>
+}

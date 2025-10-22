@@ -1,0 +1,233 @@
+@{
+    ViewData["Title"] = "Quiz Results";
+    var attempt = ViewBag.Attempt as BasicProject.Data.Entities.Attempt;
+    var quiz = ViewBag.Quiz as BasicProject.Data.Entities.Quiz;
+    var percentage = ViewBag.Percentage;
+}
+
+<div class="container mt-4">
+    <!-- Results Header -->
+    <div class="card mb-4 border-0 shadow">
+        <div class="card-body text-center py-5">
+            @if (percentage >= 80)
+            {
+                <i class="bi bi-trophy-fill text-warning" style="font-size: 4rem;"></i>
+                <h2 class="mt-3 text-success">Excellent Work!</h2>
+            }
+            else if (percentage >= 60)
+            {
+                <i class="bi bi-hand-thumbs-up-fill text-primary" style="font-size: 4rem;"></i>
+                <h2 class="mt-3 text-primary">Good Job!</h2>
+            }
+            else
+            {
+                <i class="bi bi-book text-info" style="font-size: 4rem;"></i>
+                <h2 class="mt-3 text-info">Keep Learning!</h2>
+            }
+            
+            <h3 class="mt-4">@quiz.Title</h3>
+            <p class="text-muted">Completed by @attempt.User?.Name</p>
+        </div>
+    </div>
+
+    <!-- Score Card -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center border-success">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">SCORE</h6>
+                    <h2 class="text-success mb-0">@attempt.Score / @attempt.TotalQuestions</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center border-primary">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">PERCENTAGE</h6>
+                    <h2 class="text-primary mb-0">@percentage%</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center border-info">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">TIME</h6>
+                    <h2 class="text-info mb-0">
+                        @{
+                            var duration = attempt.CompletedAt.HasValue 
+                                ? (attempt.CompletedAt.Value - attempt.AttemptedAt).TotalMinutes 
+                                : 0;
+                        }
+                        @Math.Round(duration, 1) min
+                    </h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Question Review -->
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-list-check"></i> Answer Review
+            </h5>
+        </div>
+        <div class="card-body">
+            @if (quiz?.Questions != null)
+            {
+                @foreach (var question in quiz.Questions.OrderBy(q => q.Order))
+                {
+                    var answer = attempt.Answers.FirstOrDefault(a => a.QuestionId == question.Id);
+                    var correctOption = question.Options.FirstOrDefault(o => o.IsCorrect);
+                    var isCorrect = answer?.IsCorrect ?? false;
+
+                    <div class="mb-4 pb-4 border-bottom">
+                        <div class="d-flex align-items-start mb-3">
+                            @if (isCorrect)
+                            {
+                                <i class="bi bi-check-circle-fill text-success me-2" style="font-size: 1.5rem;"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-x-circle-fill text-danger me-2" style="font-size: 1.5rem;"></i>
+                            }
+                            <div class="flex-grow-1">
+                                <h6 class="mb-2">Question @(question.Order + 1)</h6>
+                                <p class="mb-3"><strong>@question.Text</strong></p>
+
+                                @foreach (var option in question.Options)
+                                {
+                                    var isSelected = answer?.SelectedOptionId == option.Id;
+                                    var isCorrectAnswer = option.IsCorrect;
+
+                                    <div class="option-result p-2 mb-2 rounded @(isCorrectAnswer ? "bg-success bg-opacity-10 border border-success" : isSelected ? "bg-danger bg-opacity-10 border border-danger" : "border")">
+                                        <div class="d-flex align-items-center">
+                                            @if (isSelected)
+                                            {
+                                                <i class="bi bi-arrow-right-circle-fill me-2 @(isCorrectAnswer ? "text-success" : "text-danger")"></i>
+                                            }
+                                            else if (isCorrectAnswer)
+                                            {
+                                                <i class="bi bi-check-circle me-2 text-success"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="bi bi-circle me-2 text-muted"></i>
+                                            }
+                                            
+                                            <span class="flex-grow-1">@option.Text</span>
+                                            
+                                            @if (isCorrectAnswer)
+                                            {
+                                                <span class="badge bg-success ms-2">Correct Answer</span>
+                                            }
+                                            @if (isSelected && !isCorrectAnswer)
+                                            {
+                                                <span class="badge bg-danger ms-2">Your Answer</span>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+
+                                @if (answer == null)
+                                {
+                                    <div class="alert alert-warning mt-2 mb-0">
+                                        <i class="bi bi-exclamation-triangle"></i> Not answered
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3 mb-md-0">
+            <a href="/QuizTaking/Take/@quiz.Id" class="btn btn-primary w-100">
+                <i class="bi bi-arrow-clockwise"></i> Take Quiz Again
+            </a>
+        </div>
+        <div class="col-md-6">
+            <a href="/" class="btn btn-outline-secondary w-100">
+                <i class="bi bi-house"></i> Back to Home
+            </a>
+        </div>
+    </div>
+
+    <!-- Share Results -->
+    <div class="card bg-light">
+        <div class="card-body text-center">
+            <h6 class="mb-3">Share Your Results</h6>
+            <div class="btn-group" role="group">
+                <a href="https://twitter.com/intent/tweet?text=I scored @attempt.Score/@attempt.TotalQuestions (@percentage%) on @quiz.Title!" 
+                   target="_blank" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-twitter"></i> Twitter
+                </a>
+                <a href="https://www.facebook.com/sharer/sharer.php?u=@Context.Request.Scheme://@Context.Request.Host/QuizTaking/Take/@quiz.Id" 
+                   target="_blank" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-facebook"></i> Facebook
+                </a>
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="copyResultsLink()">
+                    <i class="bi bi-link-45deg"></i> Copy Link
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function copyResultsLink() {
+            const link = `@Context.Request.Scheme://@Context.Request.Host/QuizTaking/Take/@quiz.Id`;
+            navigator.clipboard.writeText(link).then(function() {
+                alert('Quiz link copied to clipboard!');
+            }, function(err) {
+                console.error('Could not copy text: ', err);
+            });
+        }
+
+        // Confetti effect for high scores
+        @if (percentage >= 80)
+        {
+            <text>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Simple confetti effect using emoji (reduced count for performance)
+                const colors = ['🎉', '🎊', '⭐', '🌟', '✨'];
+                for (let i = 0; i < 15; i++) {
+                    setTimeout(() => {
+                        const confetti = document.createElement('div');
+                        confetti.textContent = colors[Math.floor(Math.random() * colors.length)];
+                        confetti.style.position = 'fixed';
+                        confetti.style.left = Math.random() * 100 + '%';
+                        confetti.style.top = '-50px';
+                        confetti.style.fontSize = '2rem';
+                        confetti.style.zIndex = '9999';
+                        confetti.style.pointerEvents = 'none';
+                        document.body.appendChild(confetti);
+                        
+                        let pos = -50;
+                        const interval = setInterval(() => {
+                            pos += 5;
+                            confetti.style.top = pos + 'px';
+                            confetti.style.opacity = 1 - (pos / window.innerHeight);
+                            if (pos > window.innerHeight) {
+                                clearInterval(interval);
+                                confetti.remove();
+                            }
+                        }, 50);
+                    }, i * 150);
+                }
+            });
+            </text>
+        }
+    </script>
+
+    <style>
+        .option-result {
+            transition: all 0.2s ease;
+        }
+    </style>
+}
