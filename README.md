@@ -4,7 +4,7 @@
 
 1. **.NET 8.0 SDK** - [Download here](https://dotnet.microsoft.com/download/dotnet/8.0)
 2. **PostgreSQL** access (either local or remote)
-3. **Visual Studio Code** or **Visual Studio 2022** (optional but recommended)
+3. **Visual Studio Code**
 
 ## Database Setup
 
