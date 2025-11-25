@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace BasicProject.Controllers.Api;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/attempts")]
 public class AttemptsApiController : ControllerBase
 {
     private readonly AppDbContext _context;

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BasicProject.Controllers.Api;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/users")]
 public class UsersApiController : ControllerBase
 {
     private readonly IUserRepository _users;

@@ -1,0 +1,49 @@
+export interface QuizSummary {
+	id: number
+	title: string
+	description?: string | null
+	authorId?: number | null
+	authorName?: string | null
+	createdAt?: string
+	questionCount: number
+}
+
+export interface Option {
+	id: number
+	text: string
+	isCorrect?: boolean | null
+}
+
+export interface Question {
+	id: number
+	text: string
+	order?: number
+	options: Option[]
+}
+
+export interface QuizDetail {
+	id: number
+	title: string
+	description?: string | null
+	authorId?: number | null
+	authorName?: string | null
+	createdAt?: string
+	questions: Question[]
+}
+
+export interface CreateOptionDto {
+	text: string
+	isCorrect: boolean
+}
+
+export interface CreateQuestionDto {
+	text: string
+	options: CreateOptionDto[]
+}
+
+export interface CreateQuizDto {
+	title: string
+	description?: string
+	authorId: number
+	questions: CreateQuestionDto[]
+}

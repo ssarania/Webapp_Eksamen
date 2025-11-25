@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace BasicProject.Controllers.Api;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/quizzes")]
 public class QuizzesApiController : ControllerBase
 {
     private readonly IQuizRepository _quizzes;

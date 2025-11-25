@@ -25,6 +25,19 @@ builder.Services.AddDbContext<BasicProject.Data.AppDbContext>(options =>
 builder.Services.AddScoped<BasicProject.Data.Repositories.IUserRepository, BasicProject.Data.Repositories.UserRepository>();
 builder.Services.AddScoped<BasicProject.Data.Repositories.IQuizRepository, BasicProject.Data.Repositories.QuizRepository>();
 
+// Configure CORS so the frontend (Vite dev server) can call the API during development
+var viteDevOrigin = "http://localhost:5173";
+var corsPolicyName = "AllowViteDev";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(corsPolicyName, policy =>
+    {
+        policy.WithOrigins(viteDevOrigin)
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -48,6 +61,9 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+// Enable the configured CORS policy
+app.UseCors(corsPolicyName);
 
 app.UseAuthorization();
 
