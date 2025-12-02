@@ -1,64 +1,77 @@
-import { useEffect, useState } from 'react'
-import { getQuizzes, deleteQuiz } from '../services/api'
-import type { QuizSummary } from '../types'
-import QuizCard from '../components/QuizCard'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Card, CardContent } from '../components/ui/card'
-import { Input } from '../components/ui/input'
-import { Button } from '../components/ui/button'
-import { cn } from '../lib/utils'
+import { getQuizSummaries, deleteQuiz } from '../lib/storage'
+import type { QuizSummary } from '../types'
 
 export default function Quizzes() {
-	const [quizzes, setQuizzes] = useState<QuizSummary[]>([])
+	const [quizzes, setQuizzes] = useState<QuizSummary[]>(() => getQuizSummaries())
 	const [filter, setFilter] = useState('')
-	const [loading, setLoading] = useState(false)
-	const [error, setError] = useState<string | null>(null)
+	const [sort, setSort] = useState<'new' | 'alpha'>('new')
+	const [page, setPage] = useState(1)
+	const pageSize = 6
 
 	useEffect(() => {
-		setLoading(true)
-		getQuizzes()
-			.then(data => setQuizzes(data))
-			.catch(err => setError(err?.body?.error || String(err)))
-			.finally(() => setLoading(false))
+		setQuizzes(getQuizSummaries())
 	}, [])
 
-	const onDelete = async (id: number) => {
+	function handleDelete(id: number) {
 		if (!confirm('Delete this quiz?')) return
-		try {
-			await deleteQuiz(id)
-			setQuizzes(prev => prev.filter(q => q.id !== id))
-		} catch (e: any) {
-			alert('Failed to delete: ' + (e?.body?.error || e))
-		}
+		deleteQuiz(id)
+		setQuizzes(prev => prev.filter(q => q.id !== id))
 	}
 
-	const filtered = quizzes.filter(q => (q.title + ' ' + (q.authorName ?? '')).toLowerCase().includes(filter.toLowerCase()))
+	const filtered = useMemo(() => {
+		const f = (filter || '').toLowerCase()
+		let out = quizzes.filter(q => (q.title + ' ' + (q.authorName ?? '') + ' ' + (q.description ?? '')).toLowerCase().includes(f))
+		if (sort === 'alpha') out = out.sort((a, b) => a.title.localeCompare(b.title))
+		else out = out.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
+		return out
+	}, [quizzes, filter, sort])
+
+	const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+	const pageItems = filtered.slice((page - 1) * pageSize, page * pageSize)
 
 	return (
-		<div>
-			<div className="flex items-center justify-between mb-4">
-				<h2 className="text-xl font-semibold">Quizzes</h2>
-				<Link to="/quiz-creation/create">
-					<Button>Create quiz</Button>
-				</Link>
+		<div className="space-y-4">
+			<div className="flex items-center justify-between">
+				<h1 className="text-2xl font-bold">Quizzes</h1>
+				<Link to="/quiz-create" className="px-4 py-2 bg-blue-600 text-white rounded">Create quiz</Link>
 			</div>
 
-			<Card className="mb-4">
-				<CardContent className="p-4">
-					<div className={cn('flex gap-2')}>
-						<Input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Search by title or author" />
-					</div>
-				</CardContent>
-			</Card>
+			<div className="flex gap-3 items-center">
+				<input className="border rounded px-3 py-2 flex-1" placeholder="Search quizzes by title, author or description" value={filter} onChange={e => { setFilter(e.target.value); setPage(1) }} />
+				<select value={sort} onChange={e => setSort(e.target.value as any)} className="border rounded px-2 py-2">
+					<option value="new">Newest</option>
+					<option value="alpha">A → Z</option>
+				</select>
+			</div>
 
-			{loading && <div className="text-slate-600">Loading…</div>}
-			{error && <div className="text-red-600">Error: {error}</div>}
-
-			<div className="grid gap-3">
-				{filtered.map(q => (
-					<QuizCard key={q.id} quiz={q} onDelete={onDelete} />
+			<div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+				{pageItems.length === 0 && <div className="text-slate-600">No quizzes found.</div>}
+				{pageItems.map(q => (
+					<article key={q.id} className="bg-white p-4 rounded shadow">
+						<div className="flex justify-between items-start">
+							<div>
+								<h3 className="font-semibold text-lg">{q.title}</h3>
+								<p className="text-sm text-slate-500">{q.description}</p>
+								<div className="mt-2 text-xs text-slate-500">{q.questionCount} questions • {q.authorName ?? 'Unknown'}</div>
+							</div>
+							<div className="ml-3 flex flex-col gap-2">
+								<Link to={`/quizzes/${q.id}`} className="text-sm text-blue-600">Open</Link>
+								<button onClick={() => handleDelete(q.id)} className="text-sm text-red-600">Delete</button>
+							</div>
+						</div>
+					</article>
 				))}
-				{filtered.length === 0 && !loading && <div className="text-slate-600">No quizzes found.</div>}
+			</div>
+
+			<div className="flex items-center justify-between">
+				<div className="text-sm text-slate-600">Showing {filtered.length} result(s)</div>
+				<div className="flex items-center gap-2">
+					<button onClick={() => setPage(p => Math.max(1, p - 1))} className="px-3 py-1 border rounded">Prev</button>
+					<div className="px-3">{page}/{totalPages}</div>
+					<button onClick={() => setPage(p => Math.min(totalPages, p + 1))} className="px-3 py-1 border rounded">Next</button>
+				</div>
 			</div>
 		</div>
 	)

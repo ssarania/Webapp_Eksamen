@@ -1,60 +1,82 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getQuizById } from '../services/api'
+import { getQuizById, saveAttempt } from '../lib/storage'
 import type { QuizDetail as QuizDetailType } from '../types'
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
-import { Button } from '../components/ui/button'
 
 export default function QuizDetail() {
 	const { id } = useParams()
 	const [quiz, setQuiz] = useState<QuizDetailType | null>(null)
-	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
+	const [answers, setAnswers] = useState<Record<number, number | null>>({})
+	const [submitted, setSubmitted] = useState(false)
+	const [score, setScore] = useState<number | null>(null)
 
 	useEffect(() => {
 		if (!id) return
-		setLoading(true)
-		getQuizById(id)
-			.then(setQuiz)
-			.catch(err => setError(err?.body?.error || String(err)))
-			.finally(() => setLoading(false))
+		const q = getQuizById(id)
+		if (!q) setError('Quiz not found')
+		setQuiz(q)
 	}, [id])
 
-	if (loading) return <div>Loading…</div>
-	if (error) return <div className="text-red-600">Error: {error}</div>
-	if (!quiz) return <div>No quiz found.</div>
+	if (!quiz) return <div className="text-slate-600">Loading or not found</div>
+
+	function selectOption(questionId: number, optionId: number) {
+		setAnswers(a => ({ ...a, [questionId]: optionId }))
+	}
+
+	function onSubmit(e: React.FormEvent) {
+		e.preventDefault()
+		if (!quiz) return
+		let correct = 0
+		quiz.questions.forEach(q => {
+			const selected = answers[q.id] ?? null
+			const found = q.options.find(o => o.isCorrect)
+			if (found && selected === found.id) correct += 1
+		})
+		setScore(correct)
+		setSubmitted(true)
+
+		saveAttempt({ quizId: quiz.id, quizTitle: quiz.title, score: correct, total: quiz.questions.length, answers: quiz.questions.map(q => ({ questionId: q.id, selectedOptionId: answers[q.id] ?? null })) })
+	}
 
 	return (
-		<div>
-			<div className="flex items-center justify-between mb-4">
-				<h2 className="text-xl font-semibold">{quiz.title}</h2>
-				<Link to="/quizzes">
-					<Button variant="ghost" size="sm">Back</Button>
-				</Link>
+		<div className="space-y-4">
+			<div className="flex items-center justify-between">
+				<div>
+					<h1 className="text-2xl font-bold">{quiz.title}</h1>
+					<p className="text-sm text-slate-500">{quiz.description}</p>
+				</div>
+				<Link to="/quizzes" className="text-sm text-blue-600">Back to list</Link>
 			</div>
 
-			<Card className="mb-4">
-				<CardHeader>
-					<CardTitle>{quiz.title}</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<p className="mb-2 text-slate-600">{quiz.description}</p>
-					<p className="text-xs text-muted-foreground mb-4">By {quiz.authorName ?? 'Unknown'}</p>
+			<form onSubmit={onSubmit} className="space-y-4">
+				{quiz.questions.map((q, i) => (
+					<fieldset key={q.id} className="bg-white p-4 rounded shadow">
+						<legend className="font-medium">{i + 1}. {q.text}</legend>
+						<div className="mt-2 space-y-2">
+							{q.options.map(o => (
+								<label key={o.id} className={`flex items-center gap-3 p-2 rounded cursor-pointer ${submitted ? (o.isCorrect ? 'bg-green-50' : '') : 'hover:bg-slate-50'}`}>
+									<input name={`q-${q.id}`} type="radio" checked={answers[q.id] === o.id} disabled={submitted} onChange={() => selectOption(q.id, o.id)} />
+									<span className="text-sm">{o.text}</span>
+								</label>
+							))}
+						</div>
+					</fieldset>
+				))}
 
-					<div className="space-y-4">
-						{quiz.questions.map(q => (
-							<Card key={q.id} className="p-4">
-								<div className="font-medium">{q.order != null ? `${q.order + 1}. ` : ''}{q.text}</div>
-								<ul className="mt-2 list-disc pl-5 text-sm">
-									{q.options.map(o => (
-										<li key={o.id}>{o.text}</li>
-									))}
-								</ul>
-							</Card>
-						))}
+				{!submitted && <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">Submit answers</button>}
+
+				{submitted && score !== null && (
+					<div className="bg-white p-4 rounded shadow">
+						<h3 className="font-semibold">Results</h3>
+						<p className="mt-2">You scored <span className="font-bold">{score}</span> out of {quiz.questions.length} ({Math.round((score / quiz.questions.length) * 100)}%)</p>
+						<div className="mt-3 flex gap-3">
+							<Link to="/quizzes" className="text-sm text-blue-600">Back to quizzes</Link>
+							<button type="button" onClick={() => { setSubmitted(false); setAnswers({}); setScore(null) }} className="text-sm text-slate-600">Retake</button>
+						</div>
 					</div>
-				</CardContent>
-			</Card>
+				)}
+			</form>
 		</div>
 	)
 }
