@@ -11,4 +11,20 @@ export default defineConfig({
 			"@": path.resolve(__dirname, "./src"),
 		},
 	},
+
+	// Proxy API requests to the backend during development
+	server: {
+		proxy: {
+			'/api': {
+				target: 'http://localhost:5093',
+				changeOrigin: true,
+				secure: false,
+			},
+			'/auth': {
+				target: 'http://localhost:5093',
+				changeOrigin: true,
+				secure: false,
+			},
+		},
+	},
 })

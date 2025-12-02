@@ -2,12 +2,13 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
+import GitHubAuthButton from './GitHubAuthButton'
 
 export default function Layout({ children }: { children: ReactNode }) {
 	return (
 		<div className="min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
 			<header className="bg-white dark:bg-slate-800 border-b">
-				<div className="container flex items-center justify-between h-16">
+				<div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-16">
 					<div className="flex items-center gap-6">
 						<Link to="/" className="font-bold text-xl">QuizApp</Link>
 						<nav className="hidden sm:flex space-x-4 text-sm">
@@ -15,6 +16,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 							<Link to="/quiz-creation/create" className="hover:underline">Create</Link>
 							<Link to="/dashboard" className="hover:underline">Dashboard</Link>
 							<Link to="/users" className="hover:underline">Users</Link>
+							<Link to="/profile" className="hover:underline">Profile</Link>
 						</nav>
 					</div>
 
@@ -26,8 +28,9 @@ export default function Layout({ children }: { children: ReactNode }) {
 				</div>
 			</header>
 
-			<main className="container py-8">
-				{children}
+			<main className="max-w-6xl mx-auto py-8 px-4">
+				<GitHubAuthButton />
+				<div className="mx-auto w-full">{children}</div>
 			</main>
 
 			<footer className="border-t text-sm py-6 mt-12 text-center">

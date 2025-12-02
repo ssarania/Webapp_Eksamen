@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +9,21 @@ builder.Services.AddControllersWithViews();
 
 // Add API controllers support
 builder.Services.AddControllers();
+
+// Cookie authentication for server-side sessions (used by GitHub OAuth callback)
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "QuizApp.Auth";
+        options.Cookie.HttpOnly = true;
+        // Require Secure cookie for SameSite=None compliance. Ensure HTTPS in development.
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.None;
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+    });
+
+// Register HttpClient for GitHub OAuth
+builder.Services.AddHttpClient();
 
 // Add Swagger/OpenAPI support
 builder.Services.AddEndpointsApiExplorer();
@@ -34,7 +51,8 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(viteDevOrigin)
               .AllowAnyHeader()
-              .AllowAnyMethod();
+                  .AllowAnyMethod()
+                  .AllowCredentials();
     });
 });
 
@@ -62,8 +80,11 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-// Enable the configured CORS policy
+// Enable the configured CORS policy so preflight runs before auth
 app.UseCors(corsPolicyName);
+
+// Enable authentication middleware so cookie sign-in works
+app.UseAuthentication();
 
 app.UseAuthorization();
 
