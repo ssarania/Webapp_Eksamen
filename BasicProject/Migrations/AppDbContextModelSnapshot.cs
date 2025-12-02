@@ -157,6 +157,9 @@ namespace BasicProject.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("QuestionCount")
                         .HasColumnType("integer");
 

@@ -1,23 +1,32 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getQuizSummaries, deleteQuiz } from '../lib/storage'
+import api from '../services/api'
+import { deleteQuiz as deleteLocalQuiz, getQuizSummaries } from '../lib/storage'
 import type { QuizSummary } from '../types'
 
 export default function Quizzes() {
-	const [quizzes, setQuizzes] = useState<QuizSummary[]>(() => getQuizSummaries())
+	const [quizzes, setQuizzes] = useState<QuizSummary[]>([])
 	const [filter, setFilter] = useState('')
 	const [sort, setSort] = useState<'new' | 'alpha'>('new')
 	const [page, setPage] = useState(1)
 	const pageSize = 6
 
 	useEffect(() => {
-		setQuizzes(getQuizSummaries())
+		let mounted = true
+		api.getQuizzes().then(list => { if (mounted) setQuizzes(list) }).catch(() => setQuizzes(getQuizSummaries()))
+		return () => { mounted = false }
 	}, [])
 
-	function handleDelete(id: number) {
+	async function handleDelete(id: number) {
 		if (!confirm('Delete this quiz?')) return
-		deleteQuiz(id)
-		setQuizzes(prev => prev.filter(q => q.id !== id))
+		try {
+			await api.deleteQuiz(id)
+			setQuizzes(prev => prev.filter(q => q.id !== id))
+		} catch {
+			// fallback to local delete
+			deleteLocalQuiz(id)
+			setQuizzes(prev => prev.filter(q => q.id !== id))
+		}
 	}
 
 	const filtered = useMemo(() => {

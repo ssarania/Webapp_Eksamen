@@ -44,6 +44,6 @@ export interface CreateQuestionDto {
 export interface CreateQuizDto {
 	title: string
 	description?: string
-	authorId: number
+	isPublic?: boolean
 	questions: CreateQuestionDto[]
 }

@@ -16,6 +16,8 @@ namespace BasicProject.Data.Entities
         public int AuthorId { get; set; }
         public User? Author { get; set; }
 
+        public bool IsPublic { get; set; } = false;
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public ICollection<Question> Questions { get; set; } = new List<Question>();
