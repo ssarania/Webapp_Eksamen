@@ -303,7 +303,11 @@ public class QuizzesApiController : ControllerBase
 
         try
         {
-            var quiz = await _quizzes.GetByIdAsync(id);
+            var quiz = await _context.Quizzes
+                .Include(q => q.Questions)
+                    .ThenInclude(q => q.Options)
+                .FirstOrDefaultAsync(q => q.Id == id);
+            
             if (quiz == null)
                 return NotFound(new { error = $"Quiz with ID {id} not found" });
 
@@ -314,6 +318,42 @@ public class QuizzesApiController : ControllerBase
             quiz.Title = dto.Title;
             quiz.Description = dto.Description;
             quiz.IsPublic = dto.IsPublic;
+
+            // Update questions if provided
+            if (dto.Questions != null && dto.Questions.Any())
+            {
+                // Validate questions
+                foreach (var q in dto.Questions)
+                {
+                    if (q.Options == null || q.Options.Count < 2 || q.Options.Count > 4)
+                        return BadRequest(new { error = "Each question must have 2-4 options" });
+
+                    if (q.Options.Count(o => o.IsCorrect) != 1)
+                        return BadRequest(new { error = "Each question must have exactly one correct answer" });
+                }
+
+                // Remove old questions
+                _context.Questions.RemoveRange(quiz.Questions);
+                quiz.Questions.Clear();
+
+                // Add new questions
+                int order = 0;
+                foreach (var qDto in dto.Questions)
+                {
+                    var question = new Question
+                    {
+                        Text = qDto.Text,
+                        Order = order++,
+                        Options = qDto.Options.Select(oDto => new QuestionOption
+                        {
+                            Text = oDto.Text,
+                            IsCorrect = oDto.IsCorrect
+                        }).ToList()
+                    };
+                    quiz.Questions.Add(question);
+                }
+            }
+
             _quizzes.Update(quiz);
             await _context.SaveChangesAsync();
             
@@ -385,5 +425,6 @@ public class UpdateQuizDto
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     public bool IsPublic { get; set; } = false;
+    public List<CreateQuestionDto>? Questions { get; set; }
 }
 

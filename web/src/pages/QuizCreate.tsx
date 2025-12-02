@@ -117,6 +117,7 @@ function QuestionCard({ q, qi, onUpdateText, onAddOption, onUpdateOption, onSetC
 export default function QuizCreate() {
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
+    const [isPublic, setIsPublic] = useState(false)
     const [questions, setQuestions] = useState<Q[]>([
         { text: 'Untitled question', options: [{ text: 'Option 1', isCorrect: true }, { text: 'Option 2' }] }
     ])
@@ -195,7 +196,7 @@ export default function QuizCreate() {
 		const dto: CreateQuizDto = {
 			title: title.trim(),
 			description: description.trim(),
-			isPublic: false,
+			isPublic: isPublic,
 			questions: questions.map(q => ({ text: q.text, options: q.options.map(o => ({ text: o.text, isCorrect: !!o.isCorrect })) }))
 		}
         try {
@@ -259,6 +260,26 @@ export default function QuizCreate() {
                                             value={description}
                                             onChange={e => setDescription(e.target.value)}
                                         />
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                                        <div>
+                                            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Make this quiz public</label>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Public quizzes can be seen and taken by anyone. Private quizzes are only visible to you.</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsPublic(!isPublic)}
+                                            className={`ml-4 flex-shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                                isPublic ? 'bg-green-600' : 'bg-slate-300'
+                                            }`}
+                                        >
+                                            <span
+                                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                                    isPublic ? 'translate-x-6' : 'translate-x-1'
+                                                }`}
+                                            />
+                                        </button>
                                     </div>
                                 </div>
                             </section>

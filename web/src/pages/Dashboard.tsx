@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { getQuizSummaries, loadAttempts } from '../lib/storage'
 
 export default function Dashboard() {
@@ -195,20 +196,29 @@ export default function Dashboard() {
 												<div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 transition-all duration-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:shadow-md hover:translate-x-1 border border-slate-100 dark:border-slate-600">
 													<div className="flex items-start justify-between">
 														<div className="flex-1">
-															<p className="font-semibold text-slate-900 dark:text-white group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400 transition-colors">
+															<Link to={`/quizzes/${q.id}`} className="font-semibold text-slate-900 dark:text-white group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400 transition-colors hover:underline">
 																{q.title}
-															</p>
+															</Link>
 															<p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
 																{q.questionCount} question{q.questionCount !== 1 ? 's' : ''}
 															</p>
 														</div>
-														<div className="text-right">
-															<p className="text-xs text-slate-500 dark:text-slate-400">
-																{q.createdAt ? new Date(q.createdAt).toLocaleDateString() : 'Recently'}
-															</p>
-															<div className="mt-2 inline-block px-3 py-1 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
-																Ready
+														<div className="text-right flex flex-col items-end gap-2">
+															<div>
+																<p className="text-xs text-slate-500 dark:text-slate-400">
+																	{q.createdAt ? new Date(q.createdAt).toLocaleDateString() : 'Recently'}
+																</p>
+																<div className="mt-2 inline-block px-3 py-1 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
+																	Ready
+																</div>
 															</div>
+															<Link
+																to={`/quizzes/${q.id}/edit`}
+																className="px-2 py-1 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-600 rounded transition"
+																title="Edit quiz"
+															>
+																✏️ Edit
+															</Link>
 														</div>
 													</div>
 												</div>

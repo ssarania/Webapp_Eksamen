@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { deleteQuiz as deleteLocalQuiz, getQuizSummaries } from '../lib/storage'
 import type { QuizSummary } from '../types'
@@ -19,8 +19,9 @@ function BackgroundFloaters() {
 }
 
 // Individual Quiz Card Component
-function QuizCardItem({ q, index, onDelete }: { q: QuizSummary; index: number; onDelete: (id: number) => void }) {
+function QuizCardItem({ q, index, onDelete, onTogglePublic }: { q: QuizSummary; index: number; onDelete: (id: number) => void; onTogglePublic: (id: number, isPublic: boolean) => void }) {
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+	const isPublic = q.isPublic ?? false
 
 	return (
 		<div
@@ -75,9 +76,13 @@ function QuizCardItem({ q, index, onDelete }: { q: QuizSummary; index: number; o
 					</div>
 
 					{/* Category Badge */}
-					<div className="mb-4">
-						<span className="inline-block px-3 py-1 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
-							General
+					<div className="mb-4 flex items-center gap-2">
+						<span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+							isPublic 
+								? 'bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 text-blue-700 dark:text-blue-300' 
+								: 'bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 text-slate-700 dark:text-slate-300'
+						}`}>
+							{isPublic ? '🌐 Public' : '🔒 Private'}
 						</span>
 					</div>
 
@@ -89,6 +94,13 @@ function QuizCardItem({ q, index, onDelete }: { q: QuizSummary; index: number; o
 						>
 							Open
 						</Link>
+						<button
+							onClick={() => onTogglePublic(q.id, isPublic)}
+							className="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-lg transition-all duration-200 hover:shadow-lg text-sm whitespace-nowrap"
+							title={isPublic ? 'Make private' : 'Make public'}
+						>
+							{isPublic ? '🔒 Private' : '🌐 Public'}
+						</button>
 					</div>
 
 					{/* Delete Confirmation Modal */}
@@ -127,9 +139,7 @@ export default function Quizzes() {
 	const [filter, setFilter] = useState('')
 	const [sort, setSort] = useState<'new' | 'alpha'>('new')
 	const [page, setPage] = useState(1)
-	const [successMessage, setSuccessMessage] = useState('')
 	const pageSize = 12
-	const location = useLocation()
 
 	useEffect(() => {
 		let mounted = true
@@ -149,6 +159,15 @@ export default function Quizzes() {
 		}
 	}
 
+	async function handleTogglePublic(id: number, currentIsPublic: boolean) {
+		try {
+			await api.updateQuiz(id, { isPublic: !currentIsPublic })
+			setQuizzes(prev => prev.map(q => q.id === id ? { ...q, isPublic: !currentIsPublic } : q))
+		} catch (err) {
+			alert('Failed to update quiz visibility. Please try again.')
+		}
+	}
+
 	const filtered = useMemo(() => {
 		const f = (filter || '').toLowerCase()
 		let out = quizzes.filter(q => (q.title + ' ' + (q.authorName ?? '') + ' ' + (q.description ?? '')).toLowerCase().includes(f))
@@ -164,18 +183,6 @@ export default function Quizzes() {
 		<div className="min-h-screen bg-gradient-to-b from-white via-blue-50/40 to-white py-12 relative overflow-hidden">
 			{/* Animated Background */}
 			<BackgroundFloaters />
-
-			{/* Success Toast */}
-			{successMessage && (
-				<div className="fixed top-4 right-4 z-50 animate-fade-in-up">
-					<div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2">
-						<svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
-							<path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-						</svg>
-						{successMessage}
-					</div>
-				</div>
-			)}
 
 			<div className="max-w-7xl mx-auto px-4 relative z-10">
 				{/* Hero Header */}
@@ -248,14 +255,12 @@ export default function Quizzes() {
 					</div>
 				) : (
 					<>
-						{/* Quiz Grid */}
-						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-							{pageItems.map((q, idx) => (
-								<QuizCardItem key={q.id} q={q} index={idx} onDelete={handleDelete} />
-							))}
-						</div>
-
-						{/* Pagination */}
+					{/* Quiz Grid */}
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+						{pageItems.map((q, idx) => (
+							<QuizCardItem key={q.id} q={q} index={idx} onDelete={handleDelete} onTogglePublic={handleTogglePublic} />
+						))}
+					</div>						{/* Pagination */}
 						{totalPages > 1 && (
 							<div className="flex items-center justify-center gap-4 pt-8 border-t border-slate-200 dark:border-slate-700">
 								<button

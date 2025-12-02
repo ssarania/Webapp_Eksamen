@@ -4,6 +4,7 @@ export interface QuizSummary {
 	description?: string | null
 	authorId?: number | null
 	authorName?: string | null
+	isPublic?: boolean
 	createdAt?: string
 	questionCount: number
 }
@@ -27,6 +28,8 @@ export interface QuizDetail {
 	description?: string | null
 	authorId?: number | null
 	authorName?: string | null
+	isPublic?: boolean
+	isOwned?: boolean
 	createdAt?: string
 	questions: Question[]
 }
