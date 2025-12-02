@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getQuizById, saveAttempt } from '../lib/storage'
+import api from '../services/api'
 import type { QuizDetail as QuizDetailType } from '../types'
 
 // Floating background accent shapes
@@ -71,12 +72,32 @@ export default function QuizDetail() {
 	const [submitted, setSubmitted] = useState(false)
 	const [score, setScore] = useState<number | null>(null)
 	const [current, setCurrent] = useState(0)
+	const [togglingPublic, setTogglingPublic] = useState(false)
 
 	useEffect(() => {
-		if (!id) return
-		const q = getQuizById(id)
-		if (!q) setError('Quiz not found')
-		setQuiz(q)
+		if (!id) {
+			setError('No quiz ID provided')
+			return
+		}
+		let mounted = true
+
+		async function fetchQuiz() {
+			try {
+				// Try to fetch from API first
+				const q = await api.getQuizById(id as string)
+				if (mounted) setQuiz(q)
+			} catch (err) {
+				// Fallback to local storage
+				const q = getQuizById(id as string)
+				if (mounted) {
+					if (!q) setError('Quiz not found')
+					else setQuiz(q)
+				}
+			}
+		}
+
+		fetchQuiz()
+		return () => { mounted = false }
 	}, [id])
 
 	if (error) return <div className="min-h-[120px] flex items-center justify-center text-red-600">{error}</div>
@@ -111,6 +132,20 @@ export default function QuizDetail() {
 		saveAttempt({ quizId: quiz.id, quizTitle: quiz.title, score: correct, total: quiz.questions.length, answers: quiz.questions.map((q: any) => ({ questionId: q.id, selectedOptionId: answers[q.id] ?? null })) })
 	}
 
+	async function togglePublic() {
+		if (!quiz) return
+		setTogglingPublic(true)
+		try {
+			const newIsPublic = !(quiz.isPublic ?? false)
+			await api.updateQuiz(quiz.id, { isPublic: newIsPublic })
+			setQuiz({ ...quiz, isPublic: newIsPublic })
+		} catch (err) {
+			alert('Failed to update quiz visibility. Please try again.')
+		} finally {
+			setTogglingPublic(false)
+		}
+	}
+
 	const total = quiz.questions.length
     
 
@@ -118,16 +153,37 @@ export default function QuizDetail() {
 		<div className="min-h-screen bg-gradient-to-b from-white via-blue-50/40 to-white py-12 relative overflow-hidden">
 			<FloatingShapes />
 
-			<div className="max-w-5xl mx-auto px-4 relative z-10">
-				<div className="flex items-center justify-between mb-6">
-					<div>
-						<h1 className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">{quiz.title}</h1>
-						<p className="text-sm text-slate-500">{quiz.description}</p>
-					</div>
+		<div className="max-w-5xl mx-auto px-4 relative z-10">
+			<div className="flex items-center justify-between mb-6">
+				<div>
+					<h1 className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">{quiz.title}</h1>
+					<p className="text-sm text-slate-500">{quiz.description}</p>
+					{quiz.isOwned && (
+						<button
+							onClick={togglePublic}
+							disabled={togglingPublic}
+							className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium transition-all disabled:opacity-50"
+							title={quiz.isPublic ? 'Make this quiz private' : 'Make this quiz public'}
+						>
+							<span className={`px-3 py-1 rounded-full text-xs font-medium ${
+								quiz.isPublic 
+									? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
+									: 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+							}`}>
+								{quiz.isPublic ? '🌐 Public' : '🔒 Private'}
+							</span>
+						</button>
+					)}
+				</div>
+				<div className="flex items-center gap-3">
+					{quiz.isOwned && (
+						<Link to={`/quizzes/${quiz.id}/edit`} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition text-sm font-medium">
+							✏️ Edit
+						</Link>
+					)}
 					<Link to="/quizzes" className="text-sm text-blue-600">Back</Link>
 				</div>
-
-				<div className="flex flex-col items-center">
+			</div>				<div className="flex flex-col items-center">
 					<div className="w-full mb-6">
 						<ProgressBar value={current + 1} max={total} />
 					</div>

@@ -199,9 +199,52 @@ public class QuizzesApiController : ControllerBase
 
         try
         {
-            // Always set the quiz author to the current authenticated user
-            var quiz = new Quiz 
-            { 
+            _logger.LogDebug("Create quiz request by claims: {Claims}", User.Claims.Select(c => new { c.Type, c.Value }));
+            // Ensure the author exists in the database. Some authentication flows may
+            // include a user id claim that doesn't correspond to a local DB user yet.
+            // Resolve or create a local user record and use its Id as AuthorId.
+            User? dbUser = await _context.Users.FindAsync(currentUserId.Value);
+            if (dbUser == null)
+            {
+                // Try to resolve by username claim
+                var usernameClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+                if (!string.IsNullOrEmpty(usernameClaim))
+                {
+                    dbUser = await _context.Users.FirstOrDefaultAsync(u => u.UserName == usernameClaim);
+                }
+
+                // If still not found, create a minimal local user from available claims
+                if (dbUser == null)
+                {
+                    // If we don't have a username claim to create a sensible local user,
+                    // refuse to auto-create and require a proper sign-in flow instead.
+                    if (string.IsNullOrEmpty(usernameClaim))
+                    {
+                        _logger.LogWarning("Authenticated principal has NameIdentifier={Id} but no matching local user and no username claim. Claims: {Claims}", currentUserId.Value, User.Claims.Select(c => new { c.Type, c.Value }));
+                        return Unauthorized(new { error = "Authenticated user not found in local database; please sign in via GitHub to complete account linkage." });
+                    }
+
+                    var nameClaim = User.FindFirst("name")?.Value;
+                    var emailClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+                    dbUser = new User
+                    {
+                        UserName = usernameClaim ?? $"user_{Guid.NewGuid()}",
+                        Name = nameClaim ?? usernameClaim ?? string.Empty,
+                        Email = emailClaim ?? string.Empty,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.Users.Add(dbUser);
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("Created local user {UserName} (Id={Id}) during quiz creation", dbUser.UserName, dbUser.Id);
+                }
+
+                // Update currentUserId to the local DB id
+                currentUserId = dbUser.Id;
+            }
+
+            // Always set the quiz author to the resolved local DB user id
+            var quiz = new Quiz
+            {
                 Title = dto.Title,
                 Description = dto.Description,
                 AuthorId = currentUserId.Value,
@@ -260,7 +303,11 @@ public class QuizzesApiController : ControllerBase
 
         try
         {
-            var quiz = await _quizzes.GetByIdAsync(id);
+            var quiz = await _context.Quizzes
+                .Include(q => q.Questions)
+                    .ThenInclude(q => q.Options)
+                .FirstOrDefaultAsync(q => q.Id == id);
+            
             if (quiz == null)
                 return NotFound(new { error = $"Quiz with ID {id} not found" });
 
@@ -271,6 +318,42 @@ public class QuizzesApiController : ControllerBase
             quiz.Title = dto.Title;
             quiz.Description = dto.Description;
             quiz.IsPublic = dto.IsPublic;
+
+            // Update questions if provided
+            if (dto.Questions != null && dto.Questions.Any())
+            {
+                // Validate questions
+                foreach (var q in dto.Questions)
+                {
+                    if (q.Options == null || q.Options.Count < 2 || q.Options.Count > 4)
+                        return BadRequest(new { error = "Each question must have 2-4 options" });
+
+                    if (q.Options.Count(o => o.IsCorrect) != 1)
+                        return BadRequest(new { error = "Each question must have exactly one correct answer" });
+                }
+
+                // Remove old questions
+                _context.Questions.RemoveRange(quiz.Questions);
+                quiz.Questions.Clear();
+
+                // Add new questions
+                int order = 0;
+                foreach (var qDto in dto.Questions)
+                {
+                    var question = new Question
+                    {
+                        Text = qDto.Text,
+                        Order = order++,
+                        Options = qDto.Options.Select(oDto => new QuestionOption
+                        {
+                            Text = oDto.Text,
+                            IsCorrect = oDto.IsCorrect
+                        }).ToList()
+                    };
+                    quiz.Questions.Add(question);
+                }
+            }
+
             _quizzes.Update(quiz);
             await _context.SaveChangesAsync();
             
@@ -342,5 +425,6 @@ public class UpdateQuizDto
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     public bool IsPublic { get; set; } = false;
+    public List<CreateQuestionDto>? Questions { get; set; }
 }
 

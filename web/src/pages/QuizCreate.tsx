@@ -1,8 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { CreateQuizDto } from '../types'
 import { createQuiz as createLocalQuiz } from '../lib/storage'
 import api from '../services/api'
+import { getStoredUser, initiateGitHubLogin } from '../services/githubAuthService'
+import type { GitHubUser } from '../services/githubAuthService'
 
 type Option = { text: string; isCorrect?: boolean }
 type Q = { text: string; options: Option[]; explanation?: string }
@@ -126,12 +128,42 @@ function QuestionCard({ q, qi, onUpdateText, onAddOption, onUpdateOption, onSetC
 export default function QuizCreate() {
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
+    const [isPublic, setIsPublic] = useState(false)
     const [questions, setQuestions] = useState<Q[]>([
         { text: 'Untitled question', options: [{ text: 'Option 1', isCorrect: true }, { text: 'Option 2' }], explanation: '' }
     ])
     const [error, setError] = useState<string | null>(null)
     const [saving, setSaving] = useState(false)
+    const [authUser, setAuthUser] = useState<GitHubUser | null>(null)
+    const [checkingAuth, setCheckingAuth] = useState(true)
+    const [authError, setAuthError] = useState<string | null>(null)
     const navigate = useNavigate()
+
+    useEffect(() => {
+        let mounted = true
+        const check = async () => {
+            try {
+                const res = await fetch('/api/auth/me', { credentials: 'include' })
+                if (res.ok) {
+                    const data = await res.json()
+                    if (data && data.login && mounted) {
+                        setAuthUser({ id: data.id, login: data.login, name: data.name ?? null, avatar_url: data.avatar_url ?? '', email: data.email ?? null })
+                    }
+                } else {
+                    // fallback to client stored user
+                    const stored = getStoredUser()
+                    if (stored && mounted) setAuthUser(stored)
+                }
+            } catch (e) {
+                const stored = getStoredUser()
+                if (stored && mounted) setAuthUser(stored)
+            } finally {
+                if (mounted) setCheckingAuth(false)
+            }
+        }
+        check()
+        return () => { mounted = false }
+    }, [])
 
     function addQuestion() {
         setQuestions(s => [...s, { text: '', options: [{ text: '', isCorrect: true }, { text: '' }], explanation: '' }])
@@ -224,6 +256,26 @@ export default function QuizCreate() {
                                             onChange={e => setDescription(e.target.value)}
                                         />
                                     </div>
+
+                                    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                                        <div>
+                                            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Make this quiz public</label>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Public quizzes can be seen and taken by anyone. Private quizzes are only visible to you.</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsPublic(!isPublic)}
+                                            className={`ml-4 flex-shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                                isPublic ? 'bg-green-600' : 'bg-slate-300'
+                                            }`}
+                                        >
+                                            <span
+                                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                                    isPublic ? 'translate-x-6' : 'translate-x-1'
+                                                }`}
+                                            />
+                                        </button>
+                                    </div>
                                 </div>
                             </section>
 
@@ -258,12 +310,24 @@ export default function QuizCreate() {
 
                             <div className="flex items-center gap-4">
                                 <div className="flex-1" />
-                                <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl shadow-lg hover:shadow-2xl transition disabled:opacity-60">
-                                    {saving ? 'Saving…' : 'Save quiz'}
-                                </button>
+                                    {checkingAuth ? (
+                                        <button disabled className="inline-flex items-center gap-2 px-6 py-3 bg-gray-200 text-slate-500 rounded-xl transition">Checking auth…</button>
+                                    ) : authUser ? (
+                                        <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl shadow-lg hover:shadow-2xl transition disabled:opacity-60">
+                                            {saving ? 'Saving…' : 'Save quiz'}
+                                        </button>
+                                    ) : (
+                                        <div className="flex gap-3">
+                                            <button type="button" onClick={() => initiateGitHubLogin()} className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl shadow-lg hover:shadow-2xl transition">
+                                                Sign in with GitHub
+                                            </button>
+                                            <button disabled className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl opacity-50 cursor-not-allowed">Save quiz</button>
+                                        </div>
+                                    )}
                             </div>
 
                             {error && <div className="text-red-600">{error}</div>}
+                            {authError && <div className="text-red-600">{authError}</div>}
                         </form>
                     </div>
                 </div>

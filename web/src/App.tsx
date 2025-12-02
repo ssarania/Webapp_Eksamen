@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard'
 import Quizzes from './pages/Quizzes'
 import QuizDetail from './pages/QuizDetail'
 import QuizCreate from './pages/QuizCreate'
+import QuizEdit from './pages/QuizEdit'
 import Layout from './components/Layout'
 import Profile from './pages/Profile'
 import GitHubCallbackHandler from './components/GitHubCallbackHandler'
@@ -20,6 +21,7 @@ function App() {
 					<Route path="/dashboard" element={<Dashboard />} />
 					<Route path="/quizzes" element={<Quizzes />} />
 					<Route path="/quizzes/:id" element={<QuizDetail />} />
+					<Route path="/quizzes/:id/edit" element={<QuizEdit />} />
 					<Route path="/quiz-creation/create" element={<QuizCreate />} />
 				</Routes>
 			</Layout>
