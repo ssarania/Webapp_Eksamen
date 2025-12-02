@@ -3,6 +3,66 @@ import { useParams, Link } from 'react-router-dom'
 import { getQuizById, saveAttempt } from '../lib/storage'
 import type { QuizDetail as QuizDetailType } from '../types'
 
+// Floating background accent shapes
+function FloatingShapes() {
+	return (
+		<div className="absolute inset-0 pointer-events-none overflow-hidden">
+			<div className="absolute -top-16 -left-16 w-64 h-64 bg-gradient-to-br from-blue-300/30 to-purple-400/20 rounded-2xl blur-3xl transform rotate-12 animate-float" />
+			<div className="absolute bottom-10 right-6 w-40 h-40 bg-gradient-to-tr from-pink-300/20 to-blue-300/10 rounded-2xl blur-2xl transform -rotate-6 animate-float" style={{ animationDelay: '2s' }} />
+		</div>
+	)
+}
+
+function ProgressBar({ value, max }: { value: number; max: number }) {
+	const pct = Math.round((value / Math.max(1, max)) * 100)
+	return (
+		<div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+			<div className="h-2 bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-500" style={{ width: `${pct}%` }} />
+		</div>
+	)
+}
+
+function OptionCard({ text, selected, disabled, onClick, correct, submitted }: { text: string; selected: boolean; disabled?: boolean; onClick: () => void; correct?: boolean; submitted?: boolean }) {
+	const base = 'p-4 rounded-xl border transition transform cursor-pointer select-none'
+	const selectedCls = selected ? 'scale-98 shadow-xl border-2 border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50' : 'hover:shadow-md hover:-translate-y-0.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900'
+	const resultCls = submitted ? (correct ? 'bg-green-50 border-green-400' : (selected ? 'bg-red-50 border-red-400' : 'opacity-70')) : ''
+	return (
+		<div
+			onClick={disabled ? undefined : onClick}
+			role="button"
+			tabIndex={0}
+			className={`${base} ${selectedCls} ${resultCls}`}
+		>
+			<div className="text-sm text-slate-900 dark:text-white">{text}</div>
+		</div>
+	)
+}
+
+function QuestionCard({ question, index, total, selectedOptionId, onSelect, submitted }: { question: any; index: number; total: number; selectedOptionId: number | null | undefined; onSelect: (optionId: number) => void; submitted: boolean }) {
+	return (
+		<div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-6 w-full max-w-3xl transform transition duration-300">
+			<div className="mb-4">
+				<div className="text-xs text-slate-400">Question {index + 1} of {total}</div>
+				<h3 className="text-lg font-semibold text-slate-900 dark:text-white">{question.text}</h3>
+			</div>
+
+			<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+				{question.options.map((o: any) => (
+					<OptionCard
+						key={o.id}
+						text={o.text}
+						selected={selectedOptionId === o.id}
+						onClick={() => onSelect(o.id)}
+						disabled={submitted}
+						correct={o.isCorrect}
+						submitted={submitted}
+					/>
+				))}
+			</div>
+		</div>
+	)
+}
+
 export default function QuizDetail() {
 	const { id } = useParams()
 	const [quiz, setQuiz] = useState<QuizDetailType | null>(null)
@@ -10,6 +70,7 @@ export default function QuizDetail() {
 	const [answers, setAnswers] = useState<Record<number, number | null>>({})
 	const [submitted, setSubmitted] = useState(false)
 	const [score, setScore] = useState<number | null>(null)
+	const [current, setCurrent] = useState(0)
 
 	useEffect(() => {
 		if (!id) return
@@ -18,65 +79,134 @@ export default function QuizDetail() {
 		setQuiz(q)
 	}, [id])
 
-	if (!quiz) return <div className="text-slate-600">Loading or not found</div>
+	if (error) return <div className="min-h-[120px] flex items-center justify-center text-red-600">{error}</div>
+	if (!quiz) return <div className="min-h-[200px] flex items-center justify-center text-slate-600">Loading or not found</div>
 
 	function selectOption(questionId: number, optionId: number) {
 		setAnswers(a => ({ ...a, [questionId]: optionId }))
 	}
 
-	function onSubmit(e: React.FormEvent) {
-		e.preventDefault()
+	function goNext() {
+		if (!quiz) return
+		if (current >= quiz.questions.length - 1) return
+		setCurrent(c => Math.min(quiz.questions.length - 1, c + 1))
+	}
+
+	function goPrev() {
+		setCurrent(c => Math.max(0, c - 1))
+	}
+
+	function onSubmit(e?: React.FormEvent) {
+		if (e) e.preventDefault()
 		if (!quiz) return
 		let correct = 0
-		quiz.questions.forEach(q => {
+		quiz.questions.forEach((q: any) => {
 			const selected = answers[q.id] ?? null
-			const found = q.options.find(o => o.isCorrect)
+			const found = q.options.find((o: any) => o.isCorrect)
 			if (found && selected === found.id) correct += 1
 		})
 		setScore(correct)
 		setSubmitted(true)
 
-		saveAttempt({ quizId: quiz.id, quizTitle: quiz.title, score: correct, total: quiz.questions.length, answers: quiz.questions.map(q => ({ questionId: q.id, selectedOptionId: answers[q.id] ?? null })) })
+		saveAttempt({ quizId: quiz.id, quizTitle: quiz.title, score: correct, total: quiz.questions.length, answers: quiz.questions.map((q: any) => ({ questionId: q.id, selectedOptionId: answers[q.id] ?? null })) })
 	}
 
+	const total = quiz.questions.length
+    
+
 	return (
-		<div className="space-y-4">
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold">{quiz.title}</h1>
-					<p className="text-sm text-slate-500">{quiz.description}</p>
+		<div className="min-h-screen bg-gradient-to-b from-white via-blue-50/40 to-white py-12 relative overflow-hidden">
+			<FloatingShapes />
+
+			<div className="max-w-5xl mx-auto px-4 relative z-10">
+				<div className="flex items-center justify-between mb-6">
+					<div>
+						<h1 className="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">{quiz.title}</h1>
+						<p className="text-sm text-slate-500">{quiz.description}</p>
+					</div>
+					<Link to="/quizzes" className="text-sm text-blue-600">Back</Link>
 				</div>
-				<Link to="/quizzes" className="text-sm text-blue-600">Back to list</Link>
+
+				<div className="flex flex-col items-center">
+					<div className="w-full mb-6">
+						<ProgressBar value={current + 1} max={total} />
+					</div>
+
+					{!submitted && (
+						<form onSubmit={onSubmit} className="w-full flex flex-col items-center gap-6">
+							<div className="w-full flex justify-center">
+								<QuestionCard
+									question={quiz.questions[current]}
+									index={current}
+									total={total}
+									selectedOptionId={answers[quiz.questions[current].id] ?? null}
+									onSelect={(oid) => selectOption(quiz.questions[current].id, oid)}
+									submitted={false}
+								/>
+							</div>
+
+							<div className="w-full max-w-3xl flex items-center justify-between gap-4">
+								<button type="button" onClick={goPrev} disabled={current === 0} className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm disabled:opacity-50">
+									← Previous
+								</button>
+
+								<div className="flex-1 text-center text-sm text-slate-600">Question {current + 1} / {total}</div>
+
+								{current < total - 1 ? (
+									<button type="button" onClick={goNext} disabled={answers[quiz.questions[current].id] == null} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg shadow-md disabled:opacity-50">
+										Next →
+									</button>
+								) : (
+									<button type="submit" disabled={answers[quiz.questions[current].id] == null} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg shadow-md disabled:opacity-50">
+										Submit
+									</button>
+								)}
+							</div>
+						</form>
+					)}
+
+					{submitted && score !== null && (
+						<div className="w-full flex flex-col items-center gap-6">
+							<div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-6 w-full max-w-3xl text-center animate-fade-in-up">
+								<div className="flex items-center justify-center gap-6">
+									<div className="w-28 h-28 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
+										{Math.round((score / total) * 100)}%
+									</div>
+									<div className="text-left">
+										<div className="text-sm text-slate-500">You scored</div>
+										<div className="text-2xl font-semibold">{score} of {total} correct</div>
+									</div>
+								</div>
+
+								<div className="mt-6 space-y-3 text-left">
+									{quiz.questions.map((q: any) => {
+										const sel = answers[q.id] ?? null
+										const correct = q.options.find((o: any) => o.isCorrect)
+										const isRight = correct && sel === correct.id
+										return (
+											<div key={q.id} className="flex items-start gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-800">
+												<div className={`w-6 h-6 rounded-full flex items-center justify-center ${isRight ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>{isRight ? '✓' : '✕'}</div>
+												<div>
+													<div className="font-medium">{q.text}</div>
+													<div className="text-sm text-slate-500">Selected: {q.options.find((o: any) => o.id === sel)?.text ?? '—'}</div>
+													<div className="text-sm text-slate-500">Correct: {correct?.text}</div>
+												</div>
+											</div>
+										)
+									})}
+								</div>
+
+								<div className="mt-6 flex items-center justify-center gap-4">
+									<button onClick={() => { setSubmitted(false); setAnswers({}); setScore(null); setCurrent(0) }} className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg">Retake</button>
+									<Link to="/quizzes" className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg">Back to quizzes</Link>
+								</div>
+							</div>
+						</div>
+					)}
+				</div>
 			</div>
 
-			<form onSubmit={onSubmit} className="space-y-4">
-				{quiz.questions.map((q, i) => (
-					<fieldset key={q.id} className="bg-white p-4 rounded shadow">
-						<legend className="font-medium">{i + 1}. {q.text}</legend>
-						<div className="mt-2 space-y-2">
-							{q.options.map(o => (
-								<label key={o.id} className={`flex items-center gap-3 p-2 rounded cursor-pointer ${submitted ? (o.isCorrect ? 'bg-green-50' : '') : 'hover:bg-slate-50'}`}>
-									<input name={`q-${q.id}`} type="radio" checked={answers[q.id] === o.id} disabled={submitted} onChange={() => selectOption(q.id, o.id)} />
-									<span className="text-sm">{o.text}</span>
-								</label>
-							))}
-						</div>
-					</fieldset>
-				))}
-
-				{!submitted && <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">Submit answers</button>}
-
-				{submitted && score !== null && (
-					<div className="bg-white p-4 rounded shadow">
-						<h3 className="font-semibold">Results</h3>
-						<p className="mt-2">You scored <span className="font-bold">{score}</span> out of {quiz.questions.length} ({Math.round((score / quiz.questions.length) * 100)}%)</p>
-						<div className="mt-3 flex gap-3">
-							<Link to="/quizzes" className="text-sm text-blue-600">Back to quizzes</Link>
-							<button type="button" onClick={() => { setSubmitted(false); setAnswers({}); setScore(null) }} className="text-sm text-slate-600">Retake</button>
-						</div>
-					</div>
-				)}
-			</form>
+			<style>{`\n                @keyframes float { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-18px) } }\n                .animate-float { animation: float 6s ease-in-out infinite; }\n                @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: translateY(0) } }\n                .animate-fade-in-up { animation: fadeInUp 360ms ease-out; }\n            `}</style>
 		</div>
 	)
 }
