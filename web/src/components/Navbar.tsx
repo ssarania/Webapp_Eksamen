@@ -12,7 +12,6 @@ export default function Navbar() {
 		{ label: 'Quizzes', path: '/quizzes' },
 		{ label: 'Create', path: '/quiz-creation/create' },
 		{ label: 'Dashboard', path: '/dashboard' },
-		{ label: 'Users', path: '/users' },
 	]
 
 	const isActive = (path: string) => location.pathname === path
