@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { getQuizSummaries, deleteQuiz } from '../lib/storage'
+import api from '../services/api'
+import { deleteQuiz as deleteLocalQuiz, getQuizSummaries } from '../lib/storage'
 import type { QuizSummary } from '../types'
 
 // Floating Background Elements Component
@@ -122,7 +123,7 @@ function QuizCardItem({ q, index, onDelete }: { q: QuizSummary; index: number; o
 }
 
 export default function Quizzes() {
-	const [quizzes, setQuizzes] = useState<QuizSummary[]>(() => getQuizSummaries())
+	const [quizzes, setQuizzes] = useState<QuizSummary[]>([])
 	const [filter, setFilter] = useState('')
 	const [sort, setSort] = useState<'new' | 'alpha'>('new')
 	const [page, setPage] = useState(1)
@@ -131,17 +132,21 @@ export default function Quizzes() {
 	const location = useLocation()
 
 	useEffect(() => {
-		setQuizzes(getQuizSummaries())
-		// Check if we're coming back from quiz creation
-		if ((location.state as any)?.success) {
-			setSuccessMessage((location.state as any).success)
-			setTimeout(() => setSuccessMessage(''), 3000)
-		}
-	}, [location])
+		let mounted = true
+		api.getQuizzes().then(list => { if (mounted) setQuizzes(list) }).catch(() => setQuizzes(getQuizSummaries()))
+		return () => { mounted = false }
+	}, [])
 
-	function handleDelete(id: number) {
-		deleteQuiz(id)
-		setQuizzes(prev => prev.filter(q => q.id !== id))
+	async function handleDelete(id: number) {
+		if (!confirm('Delete this quiz?')) return
+		try {
+			await api.deleteQuiz(id)
+			setQuizzes(prev => prev.filter(q => q.id !== id))
+		} catch {
+			// fallback to local delete
+			deleteLocalQuiz(id)
+			setQuizzes(prev => prev.filter(q => q.id !== id))
+		}
 	}
 
 	const filtered = useMemo(() => {

@@ -5,6 +5,7 @@ const base = 'http://localhost:5093/api'
 async function fetchJson<T>(url: string, options: RequestInit = {}): Promise<T> {
 	const res = await fetch(url, {
 		headers: { 'Content-Type': 'application/json' },
+		credentials: 'include',
 		...options,
 	})
 

@@ -16,9 +16,11 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     {
         options.Cookie.Name = "QuizApp.Auth";
         options.Cookie.HttpOnly = true;
-        // Require Secure cookie for SameSite=None compliance. Ensure HTTPS in development.
-        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-        options.Cookie.SameSite = SameSiteMode.None;
+        // For MVP local development without HTTPS make the cookie non-secure
+        // Note: modern browsers may ignore cookies with SameSite=None unless Secure is set.
+        // We choose Lax here to improve compatibility during development without HTTPS.
+        options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+        options.Cookie.SameSite = SameSiteMode.Lax;
         options.ExpireTimeSpan = TimeSpan.FromDays(7);
     });
 

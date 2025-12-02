@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using BasicProject.Data;
+using BasicProject.Data.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace BasicProject.Controllers.Api;
 
@@ -11,6 +14,7 @@ public class GitHubAuthController : ControllerBase
 {
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
+    private readonly AppDbContext _context;
 
     // GitHub OAuth configuration
     private readonly string _gitHubClientId;
@@ -18,10 +22,11 @@ public class GitHubAuthController : ControllerBase
     private readonly string _gitHubTokenUrl = "https://github.com/login/oauth/access_token";
     private readonly string _gitHubUserUrl = "https://api.github.com/user";
 
-    public GitHubAuthController(HttpClient httpClient, IConfiguration configuration)
+    public GitHubAuthController(HttpClient httpClient, IConfiguration configuration, AppDbContext context)
     {
         _httpClient = httpClient;
         _configuration = configuration;
+        _context = context;
         
         // Get GitHub OAuth credentials from configuration
         _gitHubClientId = _configuration["GitHub:ClientId"] ?? "";
@@ -106,14 +111,37 @@ public class GitHubAuthController : ControllerBase
                 email = userRoot.TryGetProperty("email", out var emailEl) ? emailEl.GetString() : null
             };
 
-            // Create authentication cookie so subsequent requests are authenticated via cookies
+            // Upsert the user in the local database using the GitHub login as unique key
+            var dbUser = await _context.Users.FirstOrDefaultAsync(u => u.UserName == (user.login ?? string.Empty));
+            if (dbUser == null)
+            {
+                dbUser = new User
+                {
+                    Name = user.name ?? user.login ?? string.Empty,
+                    UserName = user.login ?? string.Empty,
+                    Email = user.email ?? string.Empty,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.Users.Add(dbUser);
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                // Update basic profile fields
+                dbUser.Name = user.name ?? dbUser.Name;
+                dbUser.Email = user.email ?? dbUser.Email;
+                _context.Users.Update(dbUser);
+                await _context.SaveChangesAsync();
+            }
+
+            // Create authentication cookie using the local DB user id so other controllers can use it
             var claims = new List<System.Security.Claims.Claim>
             {
-                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, user.id.ToString()),
-                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, user.login ?? string.Empty),
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, dbUser.Id.ToString()),
+                new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, dbUser.UserName ?? string.Empty),
             };
-            if (user.name != null) claims.Add(new System.Security.Claims.Claim("name", user.name));
-            if (user.email != null) claims.Add(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, user.email));
+            if (!string.IsNullOrEmpty(dbUser.Name)) claims.Add(new System.Security.Claims.Claim("name", dbUser.Name));
+            if (!string.IsNullOrEmpty(dbUser.Email)) claims.Add(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, dbUser.Email));
             claims.Add(new System.Security.Claims.Claim("access_token", accessToken));
 
             var identity = new System.Security.Claims.ClaimsIdentity(claims, Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
@@ -123,7 +151,7 @@ public class GitHubAuthController : ControllerBase
             return Ok(new
             {
                 accessToken = accessToken,
-                user = user
+                user = new { id = dbUser.Id, username = dbUser.UserName, name = dbUser.Name, email = dbUser.Email }
             });
         }
         catch (Exception ex)

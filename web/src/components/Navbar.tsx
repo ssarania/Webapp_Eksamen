@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Button } from './ui/button'
 import MobileMenu from './MobileMenu'
+import GitHubAuthButton from './GitHubAuthButton'
 
 export default function Navbar() {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -66,13 +66,9 @@ export default function Navbar() {
 						{/* Right Section - Sign In + Mobile Toggle */}
 						<div className="flex items-center gap-3">
 							{/* Sign In Button - Desktop */}
-							<Button
-								variant="default"
-								size="sm"
-								className="hidden sm:inline-flex bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transition-all duration-200"
-							>
-								Sign In
-							</Button>
+							<div className="hidden sm:inline-flex">
+								<GitHubAuthButton className="hidden sm:inline-flex bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transition-all duration-200 px-4 py-2 rounded-md" />
+							</div>
 
 							{/* Mobile Menu Toggle */}
 							<button

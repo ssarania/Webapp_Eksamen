@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { CreateQuizDto } from '../types'
-import { createQuiz } from '../lib/storage'
+import { createQuiz as createLocalQuiz } from '../lib/storage'
+import api from '../services/api'
 
 type Option = { text: string; isCorrect?: boolean }
 type Q = { text: string; options: Option[] }
@@ -160,21 +161,26 @@ export default function QuizCreate() {
             if (q.options.filter(x => x.isCorrect).length !== 1) return setError('Each question must have exactly one correct option')
         }
 
-        const dto: CreateQuizDto = {
-            title: title.trim(),
-            description: description.trim(),
-            authorId: 0,
-            questions: questions.map(q => ({ text: q.text, options: q.options.map(o => ({ text: o.text, isCorrect: !!o.isCorrect })) }))
-        }
-
-        try {
-            setSaving(true)
-            createQuiz(dto)
-            navigate('/quizzes', { state: { success: 'Quiz created' } })
-        } catch (err: any) {
-            setError(String(err))
-        } finally { setSaving(false) }
-    }
+		const dto: CreateQuizDto = {
+			title: title.trim(),
+			description: description.trim(),
+			isPublic: false,
+			questions: questions.map(q => ({ text: q.text, options: q.options.map(o => ({ text: o.text, isCorrect: !!o.isCorrect })) }))
+		}
+		try {
+			setSaving(true)
+			// Try server-side create, fall back to local storage
+			try {
+				const created = await api.createQuiz(dto)
+				navigate(`/quizzes/${created.id}`)
+			} catch {
+				const created = createLocalQuiz(dto as any)
+				navigate(`/quizzes/${created.id}`)
+			}
+		} catch (err: any) {
+			setError(String(err))
+		} finally { setSaving(false) }
+	}
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-white via-blue-50/40 to-white py-12">
