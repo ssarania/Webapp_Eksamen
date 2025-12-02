@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { initiateGitHubLogin } from '../services/githubAuthService';
 import { useAuth } from '../context/AuthContext';
 import { Modal } from './Modal';
@@ -101,21 +101,23 @@ export default function GitHubAuthButton({ className }: { className?: string }) 
                 <div>
                     {user ? (
                         <div className="flex items-center gap-3">
-                            {selectedProfilePicture ? (
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-sm">
-                                    {getProfilePictureEmoji()}
+                            <Link to="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                                {selectedProfilePicture ? (
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-sm">
+                                        {getProfilePictureEmoji()}
+                                    </div>
+                                ) : (
+                                    <img
+                                        src={user.avatar_url}
+                                        alt={user.login}
+                                        className="w-8 h-8 rounded-full"
+                                    />
+                                )}
+                                <div className="text-sm">
+                                    <div className="font-medium">{user.login}</div>
                                 </div>
-                            ) : (
-                                <img
-                                    src={user.avatar_url}
-                                    alt={user.login}
-                                    className="w-8 h-8 rounded-full"
-                                />
-                            )}
-                            <div className="text-sm">
-                                <div className="font-medium">{user.login}</div>
-                            </div>
-                            <button onClick={handleLogoutClick} className="ml-2 text-sm px-3 py-1 rounded-md bg-slate-100 dark:bg-slate-800">
+                            </Link>
+                            <button onClick={handleLogoutClick} className="text-sm px-3 py-1 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                                 Sign out
                             </button>
                         </div>
@@ -139,19 +141,24 @@ export default function GitHubAuthButton({ className }: { className?: string }) 
             <div style={{ margin: '1rem 0', padding: '1rem', border: '1px solid #ccc', borderRadius: '4px' }}>
                 {user ? (
                     <div>
-                        {selectedProfilePicture ? (
-                            <div style={{ display: 'inline-flex', width: 40, height: 40, borderRadius: '50%', marginRight: '10px', background: 'linear-gradient(135deg, #2563eb, #9333ea)', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
-                                {getProfilePictureEmoji()}
-                            </div>
-                        ) : (
-                            <img
-                                src={user.avatar_url}
-                                alt={user.login}
-                                style={{ width: 40, height: 40, borderRadius: '50%', marginRight: '10px' }}
-                            />
-                        )}
-                        <span>Signed in as <b>{user.login}</b></span>
-                        {user.name && <span> ({user.name})</span>}
+                        <Link to="/profile" style={{ textDecoration: 'none', color: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                            {selectedProfilePicture ? (
+                                <div style={{ display: 'inline-flex', width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #2563eb, #9333ea)', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+                                    {getProfilePictureEmoji()}
+                                </div>
+                            ) : (
+                                <img
+                                    src={user.avatar_url}
+                                    alt={user.login}
+                                    style={{ width: 40, height: 40, borderRadius: '50%' }}
+                                />
+                            )}
+                            <span>Signed in as <b>{user.login}</b></span>
+                            {user.name && <span> ({user.name})</span>}
+                        </Link>
+                        <Link to="/profile" style={{ marginLeft: 12, padding: '5px 10px', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', textDecoration: 'none', display: 'inline-block' }}>
+                            Profile
+                        </Link>
                         <button
                             onClick={handleLogoutClick}
                             style={{ marginLeft: 12, padding: '5px 10px' }}

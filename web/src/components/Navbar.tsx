@@ -15,6 +15,7 @@ export default function Navbar() {
 				{ label: 'Quizzes', path: '/quizzes' },
 				{ label: 'Create', path: '/quiz-creation/create' },
 				{ label: 'Dashboard', path: '/dashboard' },
+				{ label: 'Profile', path: '/profile' },
 		  ]
 		: [
 				{ label: 'Home', path: '/' },
