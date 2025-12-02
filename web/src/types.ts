@@ -19,6 +19,7 @@ export interface Question {
 	text: string
 	order?: number
 	options: Option[]
+	explanation?: string | null
 }
 
 export interface QuizDetail {
@@ -39,6 +40,7 @@ export interface CreateOptionDto {
 export interface CreateQuestionDto {
 	text: string
 	options: CreateOptionDto[]
+	explanation?: string
 }
 
 export interface CreateQuizDto {

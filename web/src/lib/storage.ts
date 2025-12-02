@@ -82,7 +82,7 @@ export function createQuiz(dto: CreateQuizDto): QuizDetail {
 	let qNext = 1
 	const questions = dto.questions.map((qq): any => {
 		const opts = qq.options.map((o, oi) => ({ id: oi + 1, text: o.text, isCorrect: !!o.isCorrect }))
-		return { id: qNext++, text: qq.text, order: 0, options: opts }
+		return { id: qNext++, text: qq.text, order: 0, options: opts, explanation: qq.explanation ?? '' }
 	})
 	const created: QuizDetail = { id: nextId, title: dto.title, description: dto.description ?? '', authorId: dto.authorId, authorName: undefined, createdAt: nowIso(), questions }
 	quizzes.push(created)

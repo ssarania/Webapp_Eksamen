@@ -5,7 +5,7 @@ import { createQuiz as createLocalQuiz } from '../lib/storage'
 import api from '../services/api'
 
 type Option = { text: string; isCorrect?: boolean }
-type Q = { text: string; options: Option[] }
+type Q = { text: string; options: Option[]; explanation?: string }
 
 function IconTrash() {
     return (
@@ -53,7 +53,7 @@ function OptionRow({ option, qi, oi, onText, onSetCorrect, onRemove, disableRemo
     )
 }
 
-function QuestionCard({ q, qi, onUpdateText, onAddOption, onUpdateOption, onSetCorrect, onRemoveQuestion, onRemoveOption }: {
+function QuestionCard({ q, qi, onUpdateText, onAddOption, onUpdateOption, onSetCorrect, onRemoveQuestion, onRemoveOption, onUpdateExplanation }: {
     q: Q
     qi: number
     onUpdateText: (text: string) => void
@@ -62,6 +62,7 @@ function QuestionCard({ q, qi, onUpdateText, onAddOption, onUpdateOption, onSetC
     onSetCorrect: (oi: number) => void
     onRemoveQuestion: () => void
     onRemoveOption: (oi: number) => void
+    onUpdateExplanation: (text: string) => void
 }) {
     return (
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-md p-6 space-y-4 transform transition hover:shadow-xl">
@@ -108,6 +109,16 @@ function QuestionCard({ q, qi, onUpdateText, onAddOption, onUpdateOption, onSetC
                 </button>
                 <div className="text-sm text-slate-500">{q.options.length} options</div>
             </div>
+
+            <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mt-2">Explanation (shown after quiz is completed)</label>
+                <textarea
+                    value={q.explanation ?? ''}
+                    onChange={e => onUpdateExplanation(e.target.value)}
+                    placeholder="Explanation (shown after quiz is completed)"
+                    className="mt-1 w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm"
+                />
+            </div>
         </div>
     )
 }
@@ -116,14 +127,14 @@ export default function QuizCreate() {
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
     const [questions, setQuestions] = useState<Q[]>([
-        { text: 'Untitled question', options: [{ text: 'Option 1', isCorrect: true }, { text: 'Option 2' }] }
+        { text: 'Untitled question', options: [{ text: 'Option 1', isCorrect: true }, { text: 'Option 2' }], explanation: '' }
     ])
     const [error, setError] = useState<string | null>(null)
     const [saving, setSaving] = useState(false)
     const navigate = useNavigate()
 
     function addQuestion() {
-        setQuestions(s => [...s, { text: '', options: [{ text: '', isCorrect: true }, { text: '' }] }])
+        setQuestions(s => [...s, { text: '', options: [{ text: '', isCorrect: true }, { text: '' }], explanation: '' }])
     }
 
     function removeQuestion(i: number) {
@@ -161,12 +172,12 @@ export default function QuizCreate() {
             if (q.options.filter(x => x.isCorrect).length !== 1) return setError('Each question must have exactly one correct option')
         }
 
-		const dto: CreateQuizDto = {
-			title: title.trim(),
-			description: description.trim(),
-			isPublic: false,
-			questions: questions.map(q => ({ text: q.text, options: q.options.map(o => ({ text: o.text, isCorrect: !!o.isCorrect })) }))
-		}
+        const dto: CreateQuizDto = {
+            title: title.trim(),
+            description: description.trim(),
+            isPublic: false,
+            questions: questions.map(q => ({ text: q.text, explanation: q.explanation ?? '', options: q.options.map(o => ({ text: o.text, isCorrect: !!o.isCorrect })) }))
+        }
 		try {
 			setSaving(true)
 			// Try server-side create, fall back to local storage
@@ -238,6 +249,7 @@ export default function QuizCreate() {
                                                 onSetCorrect={(oi) => setCorrect(qi, oi)}
                                                 onRemoveQuestion={() => removeQuestion(qi)}
                                                 onRemoveOption={(oi) => removeOption(qi, oi)}
+                                                onUpdateExplanation={(text) => updateQuestion(qi, { explanation: text })}
                                             />
                                         </div>
                                     ))}

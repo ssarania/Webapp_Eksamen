@@ -182,14 +182,25 @@ export default function QuizDetail() {
 									{quiz.questions.map((q: any) => {
 										const sel = answers[q.id] ?? null
 										const correct = q.options.find((o: any) => o.isCorrect)
-										const isRight = correct && sel === correct.id
+										const isRight = !!(correct && sel === correct.id)
 										return (
 											<div key={q.id} className="flex items-start gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-800">
 												<div className={`w-6 h-6 rounded-full flex items-center justify-center ${isRight ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>{isRight ? '✓' : '✕'}</div>
-												<div>
+												<div className="flex-1">
 													<div className="font-medium">{q.text}</div>
-													<div className="text-sm text-slate-500">Selected: {q.options.find((o: any) => o.id === sel)?.text ?? '—'}</div>
-													<div className="text-sm text-slate-500">Correct: {correct?.text}</div>
+													{isRight ? (
+														// Correct: show only explanation (if any)
+														q.explanation ? (
+															<div className="mt-1 text-sm text-slate-600">{q.explanation}</div>
+														) : null
+													) : (
+														// Wrong: show your answer, correct answer, and explanation (if any)
+														<div className="mt-1 space-y-1 text-sm text-slate-600">
+															<div><strong>Your answer:</strong> {q.options.find((o: any) => o.id === sel)?.text ?? '—'}</div>
+															<div><strong>Correct answer:</strong> {correct?.text ?? '—'}</div>
+															{q.explanation ? <div className="mt-1">{q.explanation}</div> : null}
+														</div>
+													)}
 												</div>
 											</div>
 										)
