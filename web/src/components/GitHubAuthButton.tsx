@@ -4,10 +4,19 @@ import { initiateGitHubLogin } from '../services/githubAuthService';
 import { useAuth } from '../context/AuthContext';
 import { Modal } from './Modal';
 
+const DEFAULT_PROFILE_PICTURES = [
+  { id: 'scholar', emoji: '🎓' },
+  { id: 'rocket', emoji: '🚀' },
+  { id: 'brain', emoji: '🧠' },
+]
+
 export default function GitHubAuthButton({ className }: { className?: string }) {
     const { user, loading, logout } = useAuth();
     const navigate = useNavigate();
     const [showConfirm, setShowConfirm] = useState(false);
+    const [selectedProfilePicture] = useState<string | null>(() => {
+        return localStorage.getItem('selected_profile_picture')
+    })
 
     useEffect(() => {
         if (showConfirm) {
@@ -40,6 +49,14 @@ export default function GitHubAuthButton({ className }: { className?: string }) 
     const cancelLogout = () => {
         setShowConfirm(false);
     };
+
+    const getProfilePictureEmoji = () => {
+        if (selectedProfilePicture) {
+            const picture = DEFAULT_PROFILE_PICTURES.find(p => p.id === selectedProfilePicture)
+            return picture?.emoji || '👤'
+        }
+        return null
+    }
 
     if (loading) return <div>Loading...</div>;
 
@@ -84,11 +101,17 @@ export default function GitHubAuthButton({ className }: { className?: string }) 
                 <div>
                     {user ? (
                         <div className="flex items-center gap-3">
-                            <img
-                                src={user.avatar_url}
-                                alt={user.login}
-                                className="w-8 h-8 rounded-full"
-                            />
+                            {selectedProfilePicture ? (
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-sm">
+                                    {getProfilePictureEmoji()}
+                                </div>
+                            ) : (
+                                <img
+                                    src={user.avatar_url}
+                                    alt={user.login}
+                                    className="w-8 h-8 rounded-full"
+                                />
+                            )}
                             <div className="text-sm">
                                 <div className="font-medium">{user.login}</div>
                             </div>
@@ -116,11 +139,17 @@ export default function GitHubAuthButton({ className }: { className?: string }) 
             <div style={{ margin: '1rem 0', padding: '1rem', border: '1px solid #ccc', borderRadius: '4px' }}>
                 {user ? (
                     <div>
-                        <img
-                            src={user.avatar_url}
-                            alt={user.login}
-                            style={{ width: 40, height: 40, borderRadius: '50%', marginRight: '10px' }}
-                        />
+                        {selectedProfilePicture ? (
+                            <div style={{ display: 'inline-flex', width: 40, height: 40, borderRadius: '50%', marginRight: '10px', background: 'linear-gradient(135deg, #2563eb, #9333ea)', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+                                {getProfilePictureEmoji()}
+                            </div>
+                        ) : (
+                            <img
+                                src={user.avatar_url}
+                                alt={user.login}
+                                style={{ width: 40, height: 40, borderRadius: '50%', marginRight: '10px' }}
+                            />
+                        )}
                         <span>Signed in as <b>{user.login}</b></span>
                         {user.name && <span> ({user.name})</span>}
                         <button
