@@ -66,7 +66,7 @@ function QuestionCard({ q, qi, onUpdateText, onAddOption, onUpdateOption, onSetC
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-md p-6 space-y-4 transform transition hover:shadow-xl">
             <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Question</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Question {qi + 1}</label>
                     <input
                         value={q.text}
                         onChange={e => onUpdateText(e.target.value)}

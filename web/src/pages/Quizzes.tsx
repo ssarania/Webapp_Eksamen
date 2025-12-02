@@ -213,7 +213,7 @@ export default function Quizzes() {
 
 							{/* Create Quiz Button */}
 							<Link
-								to="/quiz-create"
+								to="/quiz-creation/create"
 								className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transition-all duration-200 text-center"
 							>
 								+ Create Quiz
@@ -233,7 +233,7 @@ export default function Quizzes() {
 							</p>
 							{!filter && (
 								<Link
-									to="/quiz-create"
+									to="/quiz-creation/create"
 									className="inline-block px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transition-all"
 								>
 									Create Your First Quiz
