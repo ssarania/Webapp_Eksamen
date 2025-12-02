@@ -1,37 +1,17 @@
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
-import { Button } from './ui/button'
-import { Badge } from './ui/badge'
+import Navbar from './Navbar'
 
 export default function Layout({ children }: { children: ReactNode }) {
 	return (
-		<div className="min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
-			<header className="bg-white dark:bg-slate-800 border-b">
-				<div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-16">
-					<div className="flex items-center gap-6">
-						<Link to="/" className="font-bold text-xl">QuizApp</Link>
-						<nav className="hidden sm:flex space-x-4 text-sm">
-							<Link to="/quizzes" className="hover:underline">Quizzes</Link>
-							<Link to="/quiz-creation/create" className="hover:underline">Create</Link>
-							<Link to="/dashboard" className="hover:underline">Dashboard</Link>
-							<Link to="/users" className="hover:underline">Users</Link>
-						</nav>
-					</div>
+		<div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 text-slate-900 dark:text-slate-100">
+			<Navbar />
 
-					<div className="flex items-center gap-3">
-						<Link to="/quizzes" className="text-sm text-slate-600 hidden sm:block">Browse</Link>
-						<Button variant="outline" size="sm">Sign in</Button>
-						<Badge className="ml-2">v1.0</Badge>
-					</div>
-				</div>
-			</header>
-
-			<main className="max-w-6xl mx-auto py-8 px-4">
-				<div className="mx-auto w-full">{children}</div>
+			<main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+				<div className="w-full">{children}</div>
 			</main>
 
-			<footer className="border-t text-sm py-6 mt-12 text-center">
-				© {new Date().getFullYear()} QuizApp — converted to React + Tailwind
+			<footer className="border-t border-slate-200 dark:border-slate-700 text-sm py-6 mt-12 text-center text-slate-600 dark:text-slate-400">
+				© {new Date().getFullYear()} QuizApp — Modern Quiz Application
 			</footer>
 		</div>
 	)

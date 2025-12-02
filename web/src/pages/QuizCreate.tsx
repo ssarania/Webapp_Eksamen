@@ -6,119 +6,258 @@ import { createQuiz } from '../lib/storage'
 type Option = { text: string; isCorrect?: boolean }
 type Q = { text: string; options: Option[] }
 
+function IconTrash() {
+    return (
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden>
+            <path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M3 6h18M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6M10 11v6M14 11v6M9 6V4h6v2" />
+        </svg>
+    )
+}
+
+function OptionRow({ option, qi, oi, onText, onSetCorrect, onRemove, disableRemove }: {
+    option: Option
+    qi: number
+    oi: number
+    onText: (text: string) => void
+    onSetCorrect: () => void
+    onRemove: () => void
+    disableRemove: boolean
+}) {
+    return (
+        <div className="flex items-center gap-3 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+            <input
+                type="radio"
+                name={`correct-${qi}`}
+                checked={!!option.isCorrect}
+                onChange={onSetCorrect}
+                className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-200"
+                aria-label={`Select correct option ${oi + 1}`}
+            />
+            <input
+                value={option.text}
+                onChange={e => onText(e.target.value)}
+                placeholder={`Option ${oi + 1}`}
+                className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
+            />
+            <button
+                type="button"
+                onClick={onRemove}
+                disabled={disableRemove}
+                className="p-2 rounded-md text-red-600 hover:bg-red-50 disabled:opacity-40"
+                aria-label="Remove option"
+            >
+                <IconTrash />
+            </button>
+        </div>
+    )
+}
+
+function QuestionCard({ q, qi, onUpdateText, onAddOption, onUpdateOption, onSetCorrect, onRemoveQuestion, onRemoveOption }: {
+    q: Q
+    qi: number
+    onUpdateText: (text: string) => void
+    onAddOption: () => void
+    onUpdateOption: (oi: number, text: string) => void
+    onSetCorrect: (oi: number) => void
+    onRemoveQuestion: () => void
+    onRemoveOption: (oi: number) => void
+}) {
+    return (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-md p-6 space-y-4 transform transition hover:shadow-xl">
+            <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Question</label>
+                    <input
+                        value={q.text}
+                        onChange={e => onUpdateText(e.target.value)}
+                        placeholder="Enter your question"
+                        className="mt-1 w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm transition"
+                    />
+                </div>
+                <div className="ml-2 flex-shrink-0">
+                    <button type="button" onClick={onRemoveQuestion} className="inline-flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md text-sm hover:shadow transition">
+                        Delete
+                    </button>
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                {q.options.map((o, oi) => (
+                    <OptionRow
+                        key={oi}
+                        option={o}
+                        qi={qi}
+                        oi={oi}
+                        onText={text => onUpdateOption(oi, text)}
+                        onSetCorrect={() => onSetCorrect(oi)}
+                        onRemove={() => onRemoveOption(oi)}
+                        disableRemove={q.options.length <= 2}
+                    />
+                ))}
+            </div>
+
+            <div className="flex items-center justify-between">
+                <button
+                    type="button"
+                    onClick={onAddOption}
+                    disabled={q.options.length >= 4}
+                    className="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md shadow-sm hover:shadow-md transition text-sm"
+                >
+                    + Add option
+                </button>
+                <div className="text-sm text-slate-500">{q.options.length} options</div>
+            </div>
+        </div>
+    )
+}
+
 export default function QuizCreate() {
-	const [title, setTitle] = useState('')
-	const [description, setDescription] = useState('')
-	const [questions, setQuestions] = useState<Q[]>([
-		{ text: 'Untitled question', options: [{ text: 'Option 1', isCorrect: true }, { text: 'Option 2' }] }
-	])
-	const [error, setError] = useState<string | null>(null)
-	const [saving, setSaving] = useState(false)
-	const navigate = useNavigate()
+    const [title, setTitle] = useState('')
+    const [description, setDescription] = useState('')
+    const [questions, setQuestions] = useState<Q[]>([
+        { text: 'Untitled question', options: [{ text: 'Option 1', isCorrect: true }, { text: 'Option 2' }] }
+    ])
+    const [error, setError] = useState<string | null>(null)
+    const [saving, setSaving] = useState(false)
+    const navigate = useNavigate()
 
-	function addQuestion() {
-		setQuestions(s => [...s, { text: '', options: [{ text: '', isCorrect: true }, { text: '' }] }])
-	}
+    function addQuestion() {
+        setQuestions(s => [...s, { text: '', options: [{ text: '', isCorrect: true }, { text: '' }] }])
+    }
 
-	function removeQuestion(i: number) {
-		setQuestions(s => s.filter((_, idx) => idx !== i))
-	}
+    function removeQuestion(i: number) {
+        setQuestions(s => s.filter((_, idx) => idx !== i))
+    }
 
-	function updateQuestion(i: number, patch: Partial<Q>) {
-		setQuestions(s => s.map((q, idx) => idx === i ? { ...q, ...patch } : q))
-	}
+    function updateQuestion(i: number, patch: Partial<Q>) {
+        setQuestions(s => s.map((q, idx) => idx === i ? { ...q, ...patch } : q))
+    }
 
-	function addOption(qi: number) {
-		setQuestions(s => s.map((q, i) => i === qi ? { ...q, options: [...q.options, { text: '' }] } : q))
-	}
+    function addOption(qi: number) {
+        setQuestions(s => s.map((q, i) => i === qi ? { ...q, options: [...q.options, { text: '' }] } : q))
+    }
 
-	function setCorrect(qi: number, oi: number) {
-		setQuestions(s => s.map((q, i) => i === qi ? { ...q, options: q.options.map((o, j) => ({ ...o, isCorrect: j === oi })) } : q))
-	}
+    function setCorrect(qi: number, oi: number) {
+        setQuestions(s => s.map((q, i) => i === qi ? { ...q, options: q.options.map((o, j) => ({ ...o, isCorrect: j === oi })) } : q))
+    }
 
-	function updateOption(qi: number, oi: number, text: string) {
-		setQuestions(s => s.map((q, i) => i === qi ? { ...q, options: q.options.map((o, j) => j === oi ? { ...o, text } : o) } : q))
-	}
+    function updateOption(qi: number, oi: number, text: string) {
+        setQuestions(s => s.map((q, i) => i === qi ? { ...q, options: q.options.map((o, j) => j === oi ? { ...o, text } : o) } : q))
+    }
 
-	async function onSubmit(e: React.FormEvent) {
-		e.preventDefault()
-		setError(null)
-		if (!title.trim()) return setError('Please enter a quiz title')
-		if (!questions.length) return setError('Add at least one question')
-		for (const q of questions) {
-			if (!q.text.trim()) return setError('All questions must have text')
-			if (!q.options || q.options.length < 2) return setError('Each question needs at least two options')
-			if (q.options.filter(x => x.isCorrect).length !== 1) return setError('Each question must have exactly one correct option')
-		}
+    function removeOption(qi: number, oi: number) {
+        setQuestions(s => s.map((q, i) => i === qi ? { ...q, options: q.options.filter((_, j) => j !== oi) } : q))
+    }
 
-		const dto: CreateQuizDto = {
-			title: title.trim(),
-			description: description.trim(),
-			authorId: 0,
-			questions: questions.map(q => ({ text: q.text, options: q.options.map(o => ({ text: o.text, isCorrect: !!o.isCorrect })) }))
-		}
-		try {
-			setSaving(true)
-			const created = createQuiz(dto)
-			navigate(`/quizzes/${created.id}`)
-		} catch (err: any) {
-			setError(String(err))
-		} finally { setSaving(false) }
-	}
+    async function onSubmit(e: React.FormEvent) {
+        e.preventDefault()
+        setError(null)
+        if (!title.trim()) return setError('Please enter a quiz title')
+        if (!questions.length) return setError('Add at least one question')
+        for (const q of questions) {
+            if (!q.text.trim()) return setError('All questions must have text')
+            if (!q.options || q.options.length < 2) return setError('Each question needs at least two options')
+            if (q.options.filter(x => x.isCorrect).length !== 1) return setError('Each question must have exactly one correct option')
+        }
 
-	return (
-		<div className="space-y-6">
-			<header className="flex items-start justify-between">
-				<div>
-					<h1 className="text-2xl font-bold">Create a new quiz</h1>
-					<p className="text-slate-600">Build interactive quizzes with questions and options. Save locally in your browser.</p>
-				</div>
-			</header>
+        const dto: CreateQuizDto = {
+            title: title.trim(),
+            description: description.trim(),
+            authorId: 0,
+            questions: questions.map(q => ({ text: q.text, options: q.options.map(o => ({ text: o.text, isCorrect: !!o.isCorrect })) }))
+        }
 
-			<form onSubmit={onSubmit} className="space-y-6">
-				<div className="bg-white p-4 rounded shadow">
-					<label className="block text-sm font-medium">Title</label>
-					<input className="mt-1 w-full border rounded px-3 py-2" value={title} onChange={e => setTitle(e.target.value)} />
-					<label className="block text-sm font-medium mt-3">Description (optional)</label>
-					<textarea className="mt-1 w-full border rounded px-3 py-2" value={description} onChange={e => setDescription(e.target.value)} />
-				</div>
+        try {
+            setSaving(true)
+            createQuiz(dto)
+            navigate('/quizzes', { state: { success: 'Quiz created' } })
+        } catch (err: any) {
+            setError(String(err))
+        } finally { setSaving(false) }
+    }
 
-				<div className="space-y-4">
-					{questions.map((q, qi) => (
-						<div key={qi} className="bg-white p-4 rounded shadow">
-							<div className="flex justify-between items-start">
-								<div className="w-full">
-									<label className="text-sm font-medium">Question {qi + 1}</label>
-									<input className="mt-1 w-full border rounded px-3 py-2" value={q.text} onChange={e => updateQuestion(qi, { text: e.target.value })} />
-								</div>
-								<div className="ml-3">
-									<button type="button" onClick={() => removeQuestion(qi)} className="text-sm text-red-600">Remove</button>
-								</div>
-							</div>
+    return (
+        <div className="min-h-screen bg-gradient-to-b from-white via-blue-50/40 to-white py-12">
+            <div className="max-w-4xl mx-auto px-4">
+                <div className="bg-gradient-to-r from-white/40 via-blue-50/60 to-white/40 dark:from-slate-900/40 dark:via-slate-900/30 rounded-3xl p-8 shadow-2xl">
+                    <div className="max-w-3xl mx-auto">
+                        <header className="text-center mb-6">
+                            <h1 className="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Create a new Quiz</h1>
+                            <p className="mt-2 text-slate-600">Design questions, add options, and create your quiz in minutes</p>
+                        </header>
 
-							<div className="mt-3 space-y-2">
-								{q.options.map((o, oi) => (
-									<div key={oi} className="flex items-center gap-2">
-										<input type="radio" checked={!!o.isCorrect} onChange={() => setCorrect(qi, oi)} />
-										<input className="flex-1 border rounded px-2 py-1" value={o.text} onChange={e => updateOption(qi, oi, e.target.value)} />
-									</div>
-								))}
-								<div>
-									<button type="button" onClick={() => addOption(qi)} className="text-sm text-blue-600">+ Add option</button>
-								</div>
-							</div>
-						</div>
-					))}
-				</div>
+                        <form onSubmit={onSubmit} className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg p-6 space-y-6">
+                            <section className="space-y-4">
+                                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Quiz Details</h2>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Title</label>
+                                        <input
+                                            className="mt-1 w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm"
+                                            value={title}
+                                            onChange={e => setTitle(e.target.value)}
+                                        />
+                                    </div>
 
-				<div className="flex gap-3">
-					<button type="button" onClick={addQuestion} className="px-4 py-2 bg-slate-100 rounded">+ Add question</button>
-					<div className="flex-1" />
-					<button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded">{saving ? 'Saving…' : 'Save quiz'}</button>
-				</div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Description (optional)</label>
+                                        <textarea
+                                            className="mt-1 w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm"
+                                            value={description}
+                                            onChange={e => setDescription(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                            </section>
 
-				{error && <div className="text-red-600">{error}</div>}
-			</form>
-		</div>
-	)
+                            <section className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Questions</h2>
+                                    <div>
+                                        <button type="button" onClick={addQuestion} className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg shadow-md hover:shadow-2xl transition text-sm">
+                                            + Add question
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {questions.map((q, qi) => (
+                                        <div key={qi} className="animate-fade-in-up">
+                                            <QuestionCard
+                                                q={q}
+                                                qi={qi}
+                                                onUpdateText={text => updateQuestion(qi, { text })}
+                                                onAddOption={() => addOption(qi)}
+                                                onUpdateOption={(oi, text) => updateOption(qi, oi, text)}
+                                                onSetCorrect={(oi) => setCorrect(qi, oi)}
+                                                onRemoveQuestion={() => removeQuestion(qi)}
+                                                onRemoveOption={(oi) => removeOption(qi, oi)}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+
+                            <div className="flex items-center gap-4">
+                                <div className="flex-1" />
+                                <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl shadow-lg hover:shadow-2xl transition disabled:opacity-60">
+                                    {saving ? 'Saving…' : 'Save quiz'}
+                                </button>
+                            </div>
+
+                            {error && <div className="text-red-600">{error}</div>}
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <style>{`
+                @keyframes fadeInUp {
+                    from { opacity: 0; transform: translateY(12px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fade-in-up { animation: fadeInUp 320ms ease-out; }
+            `}</style>
+        </div>
+    )
 }
