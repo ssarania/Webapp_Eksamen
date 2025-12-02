@@ -1,8 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { CreateQuizDto } from '../types'
 import { createQuiz as createLocalQuiz } from '../lib/storage'
 import api from '../services/api'
+import { getStoredUser, initiateGitHubLogin } from '../services/githubAuthService'
+import type { GitHubUser } from '../services/githubAuthService'
 
 type Option = { text: string; isCorrect?: boolean }
 type Q = { text: string; options: Option[] }
@@ -120,7 +122,36 @@ export default function QuizCreate() {
     ])
     const [error, setError] = useState<string | null>(null)
     const [saving, setSaving] = useState(false)
+    const [authUser, setAuthUser] = useState<GitHubUser | null>(null)
+    const [checkingAuth, setCheckingAuth] = useState(true)
+    const [authError, setAuthError] = useState<string | null>(null)
     const navigate = useNavigate()
+
+    useEffect(() => {
+        let mounted = true
+        const check = async () => {
+            try {
+                const res = await fetch('/api/auth/me', { credentials: 'include' })
+                if (res.ok) {
+                    const data = await res.json()
+                    if (data && data.login && mounted) {
+                        setAuthUser({ id: data.id, login: data.login, name: data.name ?? null, avatar_url: data.avatar_url ?? '', email: data.email ?? null })
+                    }
+                } else {
+                    // fallback to client stored user
+                    const stored = getStoredUser()
+                    if (stored && mounted) setAuthUser(stored)
+                }
+            } catch (e) {
+                const stored = getStoredUser()
+                if (stored && mounted) setAuthUser(stored)
+            } finally {
+                if (mounted) setCheckingAuth(false)
+            }
+        }
+        check()
+        return () => { mounted = false }
+    }, [])
 
     function addQuestion() {
         setQuestions(s => [...s, { text: '', options: [{ text: '', isCorrect: true }, { text: '' }] }])
@@ -167,19 +198,35 @@ export default function QuizCreate() {
 			isPublic: false,
 			questions: questions.map(q => ({ text: q.text, options: q.options.map(o => ({ text: o.text, isCorrect: !!o.isCorrect })) }))
 		}
-		try {
-			setSaving(true)
-			// Try server-side create, fall back to local storage
-			try {
-				const created = await api.createQuiz(dto)
-				navigate(`/quizzes/${created.id}`)
-			} catch {
-				const created = createLocalQuiz(dto as any)
-				navigate(`/quizzes/${created.id}`)
-			}
-		} catch (err: any) {
-			setError(String(err))
-		} finally { setSaving(false) }
+        try {
+            setError(null)
+            setAuthError(null)
+            // Enforce sign-in before creating quiz
+            if (!authUser) {
+                setAuthError('You must sign in with GitHub to create quizzes.')
+                return
+            }
+
+            setSaving(true)
+            try {
+                const created = await api.createQuiz(dto)
+                navigate(`/quizzes/${created.id}`)
+            } catch (err: any) {
+                // If unauthorized, show auth error and prompt sign-in
+                if (err && err.status === 401) {
+                    setAuthError('Authentication required. Please sign in with GitHub.')
+                    // Clear auth state so UI updates
+                    setAuthUser(null)
+                    return
+                }
+
+                // For other errors, fall back to local storage as before
+                const created = createLocalQuiz(dto as any)
+                navigate(`/quizzes/${created.id}`)
+            }
+        } catch (err: any) {
+            setError(String(err))
+        } finally { setSaving(false) }
 	}
 
     return (
@@ -246,12 +293,24 @@ export default function QuizCreate() {
 
                             <div className="flex items-center gap-4">
                                 <div className="flex-1" />
-                                <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl shadow-lg hover:shadow-2xl transition disabled:opacity-60">
-                                    {saving ? 'Saving…' : 'Save quiz'}
-                                </button>
+                                    {checkingAuth ? (
+                                        <button disabled className="inline-flex items-center gap-2 px-6 py-3 bg-gray-200 text-slate-500 rounded-xl transition">Checking auth…</button>
+                                    ) : authUser ? (
+                                        <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl shadow-lg hover:shadow-2xl transition disabled:opacity-60">
+                                            {saving ? 'Saving…' : 'Save quiz'}
+                                        </button>
+                                    ) : (
+                                        <div className="flex gap-3">
+                                            <button type="button" onClick={() => initiateGitHubLogin()} className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl shadow-lg hover:shadow-2xl transition">
+                                                Sign in with GitHub
+                                            </button>
+                                            <button disabled className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl opacity-50 cursor-not-allowed">Save quiz</button>
+                                        </div>
+                                    )}
                             </div>
 
                             {error && <div className="text-red-600">{error}</div>}
+                            {authError && <div className="text-red-600">{authError}</div>}
                         </form>
                     </div>
                 </div>

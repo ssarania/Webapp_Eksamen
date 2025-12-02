@@ -199,9 +199,52 @@ public class QuizzesApiController : ControllerBase
 
         try
         {
-            // Always set the quiz author to the current authenticated user
-            var quiz = new Quiz 
-            { 
+            _logger.LogDebug("Create quiz request by claims: {Claims}", User.Claims.Select(c => new { c.Type, c.Value }));
+            // Ensure the author exists in the database. Some authentication flows may
+            // include a user id claim that doesn't correspond to a local DB user yet.
+            // Resolve or create a local user record and use its Id as AuthorId.
+            User? dbUser = await _context.Users.FindAsync(currentUserId.Value);
+            if (dbUser == null)
+            {
+                // Try to resolve by username claim
+                var usernameClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+                if (!string.IsNullOrEmpty(usernameClaim))
+                {
+                    dbUser = await _context.Users.FirstOrDefaultAsync(u => u.UserName == usernameClaim);
+                }
+
+                // If still not found, create a minimal local user from available claims
+                if (dbUser == null)
+                {
+                    // If we don't have a username claim to create a sensible local user,
+                    // refuse to auto-create and require a proper sign-in flow instead.
+                    if (string.IsNullOrEmpty(usernameClaim))
+                    {
+                        _logger.LogWarning("Authenticated principal has NameIdentifier={Id} but no matching local user and no username claim. Claims: {Claims}", currentUserId.Value, User.Claims.Select(c => new { c.Type, c.Value }));
+                        return Unauthorized(new { error = "Authenticated user not found in local database; please sign in via GitHub to complete account linkage." });
+                    }
+
+                    var nameClaim = User.FindFirst("name")?.Value;
+                    var emailClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+                    dbUser = new User
+                    {
+                        UserName = usernameClaim ?? $"user_{Guid.NewGuid()}",
+                        Name = nameClaim ?? usernameClaim ?? string.Empty,
+                        Email = emailClaim ?? string.Empty,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.Users.Add(dbUser);
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("Created local user {UserName} (Id={Id}) during quiz creation", dbUser.UserName, dbUser.Id);
+                }
+
+                // Update currentUserId to the local DB id
+                currentUserId = dbUser.Id;
+            }
+
+            // Always set the quiz author to the resolved local DB user id
+            var quiz = new Quiz
+            {
                 Title = dto.Title,
                 Description = dto.Description,
                 AuthorId = currentUserId.Value,
