@@ -4,11 +4,13 @@ import type { GitHubUser } from '../services/githubAuthService'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import ProfilePictureSelector, { DEFAULT_PROFILE_PICTURES } from '../components/ProfilePictureSelector'
+import { Modal } from '../components/Modal'
 
 export default function Profile() {
   const [token, setToken] = useState<string | null>(null)
   const [user, setUser] = useState<GitHubUser | null>(null)
   const [tokenVisible, setTokenVisible] = useState(false)
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false)
   const [selectedProfilePicture, setSelectedProfilePicture] = useState<string | null>(() => {
     return localStorage.getItem('selected_profile_picture')
   })
@@ -49,6 +51,19 @@ export default function Profile() {
     } catch { /* ignore */ }
     logout()
     navigate('/')
+  }
+
+  const handleSignOutClick = () => {
+    setShowSignOutConfirm(true)
+  }
+
+  const confirmSignOut = async () => {
+    setShowSignOutConfirm(false)
+    await handleSignOut()
+  }
+
+  const cancelSignOut = () => {
+    setShowSignOutConfirm(false)
   }
 
   const handleProfilePictureSelect = (pictureId: string) => {
@@ -150,7 +165,7 @@ export default function Profile() {
                 {/* Sign Out Button */}
                 <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
                   <button
-                    onClick={handleSignOut}
+                    onClick={handleSignOutClick}
                     className="w-full px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 active:scale-95"
                   >
                     Sign Out
@@ -298,6 +313,36 @@ export default function Profile() {
           </div>
         )}
       </div>
+
+      {/* Sign Out Confirmation Modal */}
+      {showSignOutConfirm && (
+        <Modal>
+          <div className="fixed top-0 left-0 right-0 bottom-0 bg-black/50 flex items-center justify-center z-[9999] p-4 overflow-hidden">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl p-6 max-w-sm w-full">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                Sign Out?
+              </h2>
+              <p className="text-slate-600 dark:text-slate-300 mb-6">
+                Are you sure you want to sign out? You'll need to sign in again to access your quizzes and dashboard.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={cancelSignOut}
+                  className="px-4 py-2 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white font-medium hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmSignOut}
+                  className="px-4 py-2 rounded-md bg-red-600 text-white font-medium hover:bg-red-700 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* CSS Animations */}
       <style>{`
