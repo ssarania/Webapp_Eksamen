@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 export default function Home() {
 	return (
 		<div className="space-y-8">
-						<section className="bg-white p-8 rounded shadow">
+			<section className="bg-white p-8 rounded shadow">
 				<div className="md:flex md:items-center md:justify-between">
 					<div>
 						<h1 className="text-3xl font-extrabold">Quizzes made simple</h1>
