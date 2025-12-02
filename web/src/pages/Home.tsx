@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 
 export default function Home() {
+	const { isAuthenticated } = useAuth()
 	return (
 		<div className="min-h-screen bg-gradient-to-b from-white via-blue-50/30 to-white">
 			{/* Hero Section */}
@@ -19,7 +21,7 @@ export default function Home() {
 							<div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100/60 dark:bg-blue-900/30 rounded-full border border-blue-200/50 dark:border-blue-800/50 backdrop-blur-sm">
 								<span className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full animate-pulse" />
 								<span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-									Welcome to QuizApp
+									{isAuthenticated ? 'Welcome back to QuizApp' : 'Welcome to QuizApp'}
 								</span>
 							</div>
 
@@ -35,7 +37,9 @@ export default function Home() {
 									</span>
 								</h1>
 								<p className="text-lg md:text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-lg">
-									Create, share, and take engaging quizzes right from your browser. Built for students, educators, and anyone who loves learning.
+									{isAuthenticated 
+										? 'Continue your learning journey. Browse quizzes, create new ones, or check your dashboard.'
+										: 'Create, share, and take engaging quizzes right from your browser. Built for students, educators, and anyone who loves learning.'}
 								</p>
 							</div>
 
@@ -51,15 +55,17 @@ export default function Home() {
 									</svg>
 								</Link>
 
-								<Link
-									to="/quiz-creation/create"
-									className="group inline-flex items-center justify-center px-8 py-4 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold rounded-lg border-2 border-slate-200 dark:border-slate-700 hover:border-blue-600 dark:hover:border-blue-500 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95"
-								>
-									<span>Create Quiz</span>
-									<svg className="w-5 h-5 ml-2 group-hover:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-									</svg>
-								</Link>
+								{isAuthenticated && (
+									<Link
+										to="/quiz-creation/create"
+										className="group inline-flex items-center justify-center px-8 py-4 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold rounded-lg border-2 border-slate-200 dark:border-slate-700 hover:border-blue-600 dark:hover:border-blue-500 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95"
+									>
+										<span>Create Quiz</span>
+										<svg className="w-5 h-5 ml-2 group-hover:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+										</svg>
+									</Link>
+								)}
 							</div>
 						</div>
 
@@ -205,10 +211,12 @@ export default function Home() {
 
 				<div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8 animate-fade-in">
 					<h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white">
-						Ready to get started?
+						{isAuthenticated ? 'Ready to continue your learning?' : 'Ready to get started?'}
 					</h2>
 					<p className="text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
-						Join thousands of students and educators already using QuizApp to create amazing learning experiences.
+						{isAuthenticated 
+							? 'Your learning tools are ready. Start exploring quizzes or create your own.'
+							: 'Join thousands of students and educators already using QuizApp to create amazing learning experiences.'}
 					</p>
 
 					<div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
@@ -218,12 +226,14 @@ export default function Home() {
 						>
 							Browse Quizzes
 						</Link>
-						<Link
-							to="/quiz-creation/create"
-							className="inline-flex items-center justify-center px-8 py-4 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold rounded-lg border-2 border-slate-200 dark:border-slate-700 hover:border-blue-600 dark:hover:border-blue-500 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95"
-						>
-							Create Your Quiz
-						</Link>
+						{isAuthenticated && (
+							<Link
+								to="/quiz-creation/create"
+								className="inline-flex items-center justify-center px-8 py-4 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold rounded-lg border-2 border-slate-200 dark:border-slate-700 hover:border-blue-600 dark:hover:border-blue-500 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95"
+							>
+								Create Your Quiz
+							</Link>
+						)}
 					</div>
 				</div>
 			</section>

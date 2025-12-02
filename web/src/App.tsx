@@ -8,6 +8,7 @@ import QuizEdit from './pages/QuizEdit'
 import Layout from './components/Layout'
 import Profile from './pages/Profile'
 import GitHubCallbackHandler from './components/GitHubCallbackHandler'
+import ProtectedRoute from './components/ProtectedRoute'
 import './index.css'
 
 function App() {
@@ -18,11 +19,11 @@ function App() {
 					<Route path="/" element={<Home />} />
 					<Route path="/callback" element={<GitHubCallbackHandler />} />
 					<Route path="/profile" element={<Profile />} />
-					<Route path="/dashboard" element={<Dashboard />} />
+					<Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 					<Route path="/quizzes" element={<Quizzes />} />
 					<Route path="/quizzes/:id" element={<QuizDetail />} />
-					<Route path="/quizzes/:id/edit" element={<QuizEdit />} />
-					<Route path="/quiz-creation/create" element={<QuizCreate />} />
+					<Route path="/quizzes/:id/edit" element={<ProtectedRoute><QuizEdit /></ProtectedRoute>} />
+					<Route path="/quiz-creation/create" element={<ProtectedRoute><QuizCreate /></ProtectedRoute>} />
 				</Routes>
 			</Layout>
 		</BrowserRouter>

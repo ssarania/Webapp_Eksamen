@@ -1,48 +1,8 @@
-import { useState, useEffect } from 'react';
-import type { GitHubUser } from '../services/githubAuthService';
-import {
-    initiateGitHubLogin,
-    getStoredUser,
-    clearGitHubAuth,
-} from '../services/githubAuthService';
+import { initiateGitHubLogin } from '../services/githubAuthService';
+import { useAuth } from '../hooks/useAuth';
 
 export default function GitHubAuthButton({ className }: { className?: string }) {
-    const [user, setUser] = useState<GitHubUser | null>(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        // First try server-side session
-        const fetchMe = async () => {
-            try {
-                const res = await fetch('/api/auth/me', { credentials: 'include' });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && data.login) {
-                        setUser({
-                            id: data.id,
-                            login: data.login,
-                            name: data.name ?? null,
-                            avatar_url: data.avatar_url ?? '',
-                            email: data.email ?? null,
-                        });
-                        setLoading(false);
-                        return;
-                    }
-                }
-            } catch (err) {
-                // ignore
-            }
-
-            // Fallback to client-side stored user
-            const storedUser = getStoredUser();
-            if (storedUser) {
-                setUser(storedUser);
-            }
-            setLoading(false);
-        };
-
-        fetchMe();
-    }, []);
+    const { user, loading, logout } = useAuth();
 
     const handleLogin = () => {
         initiateGitHubLogin();
@@ -52,8 +12,7 @@ export default function GitHubAuthButton({ className }: { className?: string }) 
         try {
             await fetch('/auth/signout', { method: 'POST', credentials: 'include' });
         } catch { /* ignore */ }
-        clearGitHubAuth();
-        setUser(null);
+        logout();
     };
 
     if (loading) return <div>Loading...</div>;

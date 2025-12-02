@@ -2,17 +2,24 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import MobileMenu from './MobileMenu'
 import GitHubAuthButton from './GitHubAuthButton'
+import { useAuth } from '../hooks/useAuth'
 
 export default function Navbar() {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 	const location = useLocation()
+	const { isAuthenticated } = useAuth()
 
-	const navLinks = [
-		{ label: 'Home', path: '/' },
-		{ label: 'Quizzes', path: '/quizzes' },
-		{ label: 'Create', path: '/quiz-creation/create' },
-		{ label: 'Dashboard', path: '/dashboard' },
-	]
+	const navLinks = isAuthenticated 
+		? [
+				{ label: 'Home', path: '/' },
+				{ label: 'Quizzes', path: '/quizzes' },
+				{ label: 'Create', path: '/quiz-creation/create' },
+				{ label: 'Dashboard', path: '/dashboard' },
+		  ]
+		: [
+				{ label: 'Home', path: '/' },
+				{ label: 'Quizzes', path: '/quizzes' },
+		  ]
 
 	const isActive = (path: string) => location.pathname === path
 
