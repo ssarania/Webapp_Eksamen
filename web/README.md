@@ -55,6 +55,62 @@ Folder notes
 - `public/` — static assets.
 - `package.json` — scripts and dependencies for running Vite and building the app.
 
+## GitHub OAuth2 integration
+
+This app uses GitHub OAuth2 to enable "Sign in with GitHub" authentication.
+
+### Setup for developers
+
+1. Create a GitHub OAuth app:
+   - Go to https://github.com/settings/developers -> OAuth Apps -> New OAuth App
+   - Fill in the form:
+     - **Application name**: QuizApp (or your app name)
+	- **Homepage URL**: `http://localhost:5173`
+	- **Authorization callback URL**: `http://localhost:5093/auth/github/callback`
+   - Click "Register application"
+   - Copy the **Client ID** and generate a **Client Secret**
+
+2. Configure frontend (`web/src/githubOAuthConfig.ts`):
+	- Replace `YOUR_GITHUB_CLIENT_ID` with your Client ID
+	- For the server-side callback flow the frontend `redirectUri` should point to the backend callback URL (default: `http://localhost:5093/auth/github/callback`) and your GitHub OAuth app must use the same URL.
+
+3. Configure backend (`BasicProject/appsettings.json`):
+   - Replace `YOUR_GITHUB_CLIENT_ID` and `YOUR_GITHUB_CLIENT_SECRET` with your OAuth app credentials
+   - **Better yet**, use user-secrets for security:
+     ```powershell
+     cd BasicProject
+     dotnet user-secrets set "GitHub:ClientId" "<your-client-id>"
+     dotnet user-secrets set "GitHub:ClientSecret" "<your-client-secret>"
+     cd ..
+     ```
+
+4. Run both frontend and backend:
+   ```bash
+   # Terminal 1: Frontend
+   cd web
+   npm install
+   npm run dev
+   
+   # Terminal 2: Backend (from repo root)
+   cd BasicProject
+   dotnet run
+   ```
+
+### Usage
+
+- A "Sign in with GitHub" button appears at the top of the app.
+- Click it to sign in with your GitHub account.
+- After signing in, your GitHub username, avatar, and name are displayed.
+- Click "Sign out" to clear the local session.
+
+### How it works
+
+1. Frontend redirects user to GitHub login at `https://github.com/login/oauth/authorize`
+2. GitHub redirects back to your app with an authorization code
+3. Backend (`/api/auth/github/callback`) exchanges the code for an access token
+4. Backend fetches user info from GitHub API and returns it to frontend
+5. Frontend stores token and user info in localStorage
+
 ## Project plan (phased)
 
 This plan breaks the work into phases to meet the course requirements and recommended quality guidelines. Each phase lists goals, acceptance criteria, and verification steps.

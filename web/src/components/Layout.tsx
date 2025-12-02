@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
+import GitHubAuthButton from './GitHubAuthButton'
 
 export default function Layout({ children }: { children: ReactNode }) {
 	return (
@@ -15,6 +16,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 							<Link to="/quiz-creation/create" className="hover:underline">Create</Link>
 							<Link to="/dashboard" className="hover:underline">Dashboard</Link>
 							<Link to="/users" className="hover:underline">Users</Link>
+							<Link to="/profile" className="hover:underline">Profile</Link>
 						</nav>
 					</div>
 
@@ -27,6 +29,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 			</header>
 
 			<main className="max-w-6xl mx-auto py-8 px-4">
+				<GitHubAuthButton />
 				<div className="mx-auto w-full">{children}</div>
 			</main>
 
