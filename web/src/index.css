@@ -133,3 +133,32 @@
     @apply max-w-6xl mx-auto px-4;
   }
 }
+
+@layer utilities {
+  @keyframes confetti-fall {
+    0% { transform: translateY(-10vh) rotate(0deg); opacity: 1 }
+    100% { transform: translateY(120vh) rotate(360deg); opacity: 0 }
+  }
+
+  .card-anim {
+    @apply transition-transform duration-200 ease-in-out hover:-translate-y-1 hover:shadow-lg;
+  }
+
+  .btn-fun {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-full bg-linear-to-r from-pink-500 to-yellow-400 text-white font-semibold shadow-md hover:scale-105 transform transition;
+  }
+
+  .muted {
+    @apply text-slate-500;
+  }
+  .badge-anim {
+    @apply inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white shadow text-sm font-medium;
+    animation: badge-pop 320ms ease-out;
+  }
+
+  @keyframes badge-pop {
+    0% { transform: scale(.6); opacity: 0 }
+    60% { transform: scale(1.08); opacity: 1 }
+    100% { transform: scale(1); opacity: 1 }
+  }
+}
