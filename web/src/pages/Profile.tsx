@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { getStoredToken, getStoredUser, clearGitHubAuth } from '../services/githubAuthService';
+import { getStoredToken, getStoredUser } from '../services/githubAuthService';
 import type { GitHubUser } from '../services/githubAuthService';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export default function Profile() {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<GitHubUser | null>(null);
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   useEffect(() => {
     const fetchMe = async () => {
@@ -36,10 +38,11 @@ export default function Profile() {
     fetchMe();
   }, []);
 
-  const handleSignOut = () => {
-    clearGitHubAuth();
-    setToken(null);
-    setUser(null);
+  const handleSignOut = async () => {
+    try {
+      await fetch('/auth/signout', { method: 'POST', credentials: 'include' });
+    } catch { /* ignore */ }
+    logout();
     navigate('/');
   };
 
