@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import api from '../services/api'
 import { deleteQuiz as deleteLocalQuiz, getQuizSummaries } from '../lib/storage'
 import type { QuizSummary } from '../types'

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Button } from './ui/button'
+import GitHubAuthButton from './GitHubAuthButton'
 
 interface NavLink {
 	label: string
@@ -63,13 +63,9 @@ export default function MobileMenu({
 					})}
 
 					{/* Sign In Button - Mobile */}
-					<Button
-						variant="default"
-						size="sm"
-						className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transition-all duration-200 mt-4"
-					>
-						Sign In
-					</Button>
+					<div className="mt-4 w-full">
+						<GitHubAuthButton className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transition-all duration-200 px-4 py-2 rounded-md" />
+					</div>
 				</div>
 			</div>
 
