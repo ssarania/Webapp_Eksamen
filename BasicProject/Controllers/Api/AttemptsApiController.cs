@@ -145,7 +145,7 @@ public class AttemptsApiController : ControllerBase
     }
 
     /// <summary>
-    /// Get attempt by ID with answers
+    /// Get attempt by ID
     /// </summary>
     [HttpGet("{id}")]
     public async Task<ActionResult> GetById(int id)
@@ -305,39 +305,6 @@ public class AttemptsApiController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get leaderboard for a quiz
-    /// </summary>
-    [HttpGet("leaderboard/{quizId}")]
-    public async Task<ActionResult> GetLeaderboard(int quizId, [FromQuery] int limit = 10)
-    {
-        try
-        {
-            var leaderboard = await _context.Attempts
-                .Include(a => a.User)
-                .Where(a => a.QuizId == quizId && a.CompletedAt != null)
-                .GroupBy(a => a.UserId)
-                .Select(g => new
-                {
-                    UserId = g.Key,
-                    UserName = g.First().User!.Name,
-                    BestScore = g.Max(a => a.Score),
-                    TotalQuestions = g.First().TotalQuestions,
-                    AttemptCount = g.Count(),
-                    BestAttemptDate = g.OrderByDescending(a => a.Score).First().CompletedAt
-                })
-                .OrderByDescending(x => x.BestScore)
-                .Take(limit)
-                .ToListAsync();
-
-            return Ok(leaderboard);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving leaderboard for quiz {QuizId}", quizId);
-            return StatusCode(500, new { error = "An error occurred while retrieving the leaderboard", details = ex.Message, innerError = ex.InnerException?.Message });
-        }
-    }
 }
 
 public class SubmitAttemptDto
