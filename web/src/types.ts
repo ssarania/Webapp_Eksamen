@@ -4,6 +4,7 @@ export interface QuizSummary {
 	description?: string | null
 	authorId?: number | null
 	authorName?: string | null
+	isOwned?: boolean
 	isPublic?: boolean
 	createdAt?: string
 	questionCount: number

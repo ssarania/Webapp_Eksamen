@@ -41,17 +41,19 @@ function QuizCardItem({ q, index, onDelete, onTogglePublic }: { q: QuizSummary; 
 							</h3>
 						</div>
 
-						{/* Delete Button */}
-						<button
-							onClick={() => setShowDeleteConfirm(true)}
-							className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 transition-opacity"
-							title="Delete quiz"
-							aria-label="Delete quiz"
-						>
-							<svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-								<path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-							</svg>
-						</button>
+						{/* Delete Button: only show for owners */}
+						{q.isOwned && (
+							<button
+								onClick={() => setShowDeleteConfirm(true)}
+								className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 transition-opacity"
+								title="Delete quiz"
+								aria-label="Delete quiz"
+							>
+								<svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+									<path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+								</svg>
+							</button>
+						)}
 					</div>
 
 					{/* Description */}
@@ -77,11 +79,10 @@ function QuizCardItem({ q, index, onDelete, onTogglePublic }: { q: QuizSummary; 
 
 					{/* Category Badge */}
 					<div className="mb-4 flex items-center gap-2">
-						<span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-							isPublic 
-								? 'bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 text-blue-700 dark:text-blue-300' 
-								: 'bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 text-slate-700 dark:text-slate-300'
-						}`}>
+						<span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${isPublic
+							? 'bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 text-blue-700 dark:text-blue-300'
+							: 'bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700/30 dark:to-slate-600/30 text-slate-700 dark:text-slate-300'
+							}`}>
 							{isPublic ? '🌐 Public' : '🔒 Private'}
 						</span>
 					</div>
@@ -94,13 +95,21 @@ function QuizCardItem({ q, index, onDelete, onTogglePublic }: { q: QuizSummary; 
 						>
 							Open
 						</Link>
-						<button
-							onClick={() => onTogglePublic(q.id, isPublic)}
-							className="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-lg transition-all duration-200 hover:shadow-lg text-sm whitespace-nowrap"
-							title={isPublic ? 'Make private' : 'Make public'}
-						>
-							{isPublic ? '🔒 Private' : '🌐 Public'}
-						</button>
+						{q.isOwned && (
+							// <button
+							// 	onClick={() => onTogglePublic(q.id, isPublic)}
+							// 	className="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-lg transition-all duration-200 hover:shadow-lg text-sm whitespace-nowrap"
+							// 	title={isPublic ? 'Make private' : 'Make public'}
+							// >
+							// 	Make {isPublic ? 'private 🔒' : 'public 🌐'}
+							// </button>
+							<Link
+								to={`/quizzes/${q.id}/edit`}
+								className="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-lg transition-all duration-200 hover:shadow-lg text-sm whitespace-nowrap text-center"
+							>
+								Edit Quiz
+							</Link>
+						)}
 					</div>
 
 					{/* Delete Confirmation Modal */}
@@ -255,12 +264,12 @@ export default function Quizzes() {
 					</div>
 				) : (
 					<>
-					{/* Quiz Grid */}
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-						{pageItems.map((q, idx) => (
-							<QuizCardItem key={q.id} q={q} index={idx} onDelete={handleDelete} onTogglePublic={handleTogglePublic} />
-						))}
-					</div>						{/* Pagination */}
+						{/* Quiz Grid */}
+						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+							{pageItems.map((q, idx) => (
+								<QuizCardItem key={q.id} q={q} index={idx} onDelete={handleDelete} onTogglePublic={handleTogglePublic} />
+							))}
+						</div>						{/* Pagination */}
 						{totalPages > 1 && (
 							<div className="flex items-center justify-center gap-4 pt-8 border-t border-slate-200 dark:border-slate-700">
 								<button
