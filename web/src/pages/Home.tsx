@@ -156,7 +156,7 @@ export default function Home() {
 									Feature-rich Editor
 								</h3>
 								<p className="text-slate-600 dark:text-slate-400 leading-relaxed flex-grow">
-									Add questions and options dynamically. Choose correct answers, set difficulty levels, and preview everything before publishing.
+									Add questions and options dynamically. Choose correct answers, add questions and preview everything before publishing.
 								</p>
 
 								{/* Hover Arrow */}
@@ -183,7 +183,7 @@ export default function Home() {
 									Local-First
 								</h3>
 								<p className="text-slate-600 dark:text-slate-400 leading-relaxed flex-grow">
-									All quizzes and attempts are stored in your browser's localStorage. No server needed. Perfect for classrooms and demos.
+									All quizzes and attempts are stored in your browser's localStorage under "My Quizzes". No server needed. Perfect for classrooms, students and demos.
 								</p>
 
 								{/* Hover Arrow */}
@@ -210,7 +210,7 @@ export default function Home() {
 									Easy to Extend
 								</h3>
 								<p className="text-slate-600 dark:text-slate-400 leading-relaxed flex-grow">
-									Built with React + TypeScript. Integrate with server APIs whenever you're ready. Clean architecture ready for scale.
+									Built with React + TypeScript and ASP.NET Core 8. Clean architecture ready for scale.
 								</p>
 
 								{/* Hover Arrow */}

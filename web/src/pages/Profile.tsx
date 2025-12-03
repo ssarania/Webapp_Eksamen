@@ -6,11 +6,24 @@ import { useAuth } from '../context/AuthContext'
 import ProfilePictureSelector, { DEFAULT_PROFILE_PICTURES } from '../components/ProfilePictureSelector'
 import { Modal } from '../components/Modal'
 
+const COLOR_PRESETS = [
+  { id: 'blue-purple', label: 'Blue to Purple', banner: 'from-blue-600 to-purple-600', frame: 'from-blue-600 to-purple-600' },
+  { id: 'purple-pink', label: 'Purple to Pink', banner: 'from-purple-600 to-pink-600', frame: 'from-purple-600 to-pink-600' },
+  { id: 'green-teal', label: 'Green to Teal', banner: 'from-green-600 to-teal-600', frame: 'from-green-600 to-teal-600' },
+  { id: 'orange-red', label: 'Orange to Red', banner: 'from-orange-600 to-red-600', frame: 'from-orange-600 to-red-600' },
+  { id: 'indigo-blue', label: 'Indigo to Blue', banner: 'from-indigo-600 to-blue-600', frame: 'from-indigo-600 to-blue-600' },
+  { id: 'pink-rose', label: 'Pink to Rose', banner: 'from-pink-600 to-rose-600', frame: 'from-pink-600 to-rose-600' },
+]
+
 export default function Profile() {
   const [user, setUser] = useState<GitHubUser | null>(null)
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false)
+  const [showColorSelector, setShowColorSelector] = useState(false)
   const [selectedProfilePicture, setSelectedProfilePicture] = useState<string | null>(() => {
     return localStorage.getItem('selected_profile_picture')
+  })
+  const [selectedColor, setSelectedColor] = useState<string>(() => {
+    return localStorage.getItem('profile_color') || 'blue-purple'
   })
   const navigate = useNavigate()
   const { logout } = useAuth()
@@ -67,6 +80,21 @@ export default function Profile() {
     localStorage.setItem('selected_profile_picture', pictureId)
   }
 
+  const handleColorSelect = (colorId: string) => {
+    setSelectedColor(colorId)
+    localStorage.setItem('profile_color', colorId)
+    window.dispatchEvent(new Event('profile-color-changed'))
+  }
+
+  const getColorClasses = () => {
+    const color = COLOR_PRESETS.find(c => c.id === selectedColor) || COLOR_PRESETS[0]
+    return {
+      banner: color.banner,
+      frame: color.frame,
+      label: color.label,
+    }
+  }
+
   const getProfilePictureEmoji = () => {
     if (selectedProfilePicture) {
       const picture = DEFAULT_PROFILE_PICTURES.find(p => p.id === selectedProfilePicture)
@@ -97,7 +125,7 @@ export default function Profile() {
           <div className="animate-fade-in-up delay-100 mb-8">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden">
               {/* Header Gradient */}
-              <div className="h-32 bg-gradient-to-r from-blue-600 to-purple-600" />
+              <div className={`h-32 bg-gradient-to-r ${getColorClasses().banner}`} />
 
               {/* Content */}
               <div className="px-8 pb-8">
@@ -106,7 +134,7 @@ export default function Profile() {
                   {/* Avatar Container */}
                   <div className="relative group">
                     {selectedProfilePicture ? (
-                      <div className="w-32 h-32 rounded-2xl border-4 border-white dark:border-slate-800 shadow-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-7xl">
+                      <div key={`avatar-${selectedColor}`} className={`w-32 h-32 rounded-2xl border-4 border-white dark:border-slate-800 shadow-lg bg-gradient-to-br ${getColorClasses().frame} flex items-center justify-center text-7xl transition-all duration-300`}>
                         {getProfilePictureEmoji()}
                       </div>
                     ) : (
@@ -188,19 +216,31 @@ export default function Profile() {
           </div>
         )}
 
+        {/* Color Selector Section - REMOVED, now using modal instead */}
+
         {/* Profile Picture Selector Section */}
         {user && (
-          <div className="animate-fade-in-up delay-200 mb-8">
+          <div className="animate-fade-in-up delay-300 mb-8">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden">
               {/* Header */}
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-700/50 dark:to-slate-700/30 px-8 py-6 border-b border-slate-100 dark:border-slate-700">
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white text-sm">
-                    🎨
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white text-sm">
+                        🎨
+                      </div>
+                      Profile Customization
+                    </h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Customize your quiz app avatar and theme</p>
                   </div>
-                  Profile Picture
-                </h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Customize your quiz app avatar</p>
+                  <button
+                    onClick={() => setShowColorSelector(!showColorSelector)}
+                    className="cursor-pointer px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 active:scale-95"
+                  >
+                    🎨 Change Color
+                  </button>
+                </div>
               </div>
 
               {/* Content */}
@@ -239,7 +279,7 @@ export default function Profile() {
 
         {/* User Data Section */}
         {user && (
-          <div className="animate-fade-in-up delay-300">
+          <div className="animate-fade-in-up delay-400">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden">
               {/* Header */}
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-700/50 dark:to-slate-700/30 px-8 py-6 border-b border-slate-100 dark:border-slate-700">
@@ -262,6 +302,63 @@ export default function Profile() {
           </div>
         )}
       </div>
+
+      {/* Color Selector Modal */}
+      {showColorSelector && (
+        <Modal>
+          <div className="fixed top-0 left-0 right-0 bottom-0 bg-black/50 flex items-center justify-center z-[9999] p-4 overflow-y-auto">
+            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl p-8 max-w-2xl w-full">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+                  🎨 Choose a Theme Color
+                </h2>
+                <button
+                  onClick={() => setShowColorSelector(false)}
+                  className="cursor-pointer text-2xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                >
+                  ×
+                </button>
+              </div>
+
+              <p className="text-slate-600 dark:text-slate-300 mb-6">
+                Select a color theme for your profile banner and picture frame:
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                {COLOR_PRESETS.map((color) => (
+                  <button
+                    key={color.id}
+                    onClick={() => {
+                      handleColorSelect(color.id)
+                      setShowColorSelector(false)
+                    }}
+                    className={`p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
+                      selectedColor === color.id
+                        ? 'border-blue-600 dark:border-blue-400 shadow-lg scale-105 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                    }`}
+                  >
+                    <div className={`h-16 bg-gradient-to-r ${color.banner} rounded-lg mb-3`} />
+                    <p className="text-sm font-medium text-slate-900 dark:text-white">{color.label}</p>
+                    {selectedColor === color.id && (
+                      <div className="mt-2 text-sm text-blue-600 dark:text-blue-400 font-semibold">✓ Selected</div>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-3 justify-end pt-6 border-t border-slate-200 dark:border-slate-700">
+                <button
+                  onClick={() => setShowColorSelector(false)}
+                  className="cursor-pointer px-4 py-2 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white font-medium hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* Sign Out Confirmation Modal */}
       {showSignOutConfirm && (

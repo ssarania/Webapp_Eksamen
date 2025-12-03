@@ -59,7 +59,7 @@ public class AppDbContext : DbContext
             eb.HasKey(aa => aa.Id);
             eb.HasOne(aa => aa.Attempt).WithMany(a => a.Answers).HasForeignKey(aa => aa.AttemptId).OnDelete(DeleteBehavior.Cascade);
             eb.HasOne(aa => aa.Question).WithMany(q => q.AttemptAnswers).HasForeignKey(aa => aa.QuestionId).OnDelete(DeleteBehavior.Restrict);
-            eb.HasOne(aa => aa.SelectedOption).WithMany(o => o.AttemptAnswers).HasForeignKey(aa => aa.SelectedOptionId).OnDelete(DeleteBehavior.Restrict);
+            eb.HasOne(aa => aa.SelectedOption).WithMany(o => o.AttemptAnswers).HasForeignKey(aa => aa.SelectedOptionId).OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

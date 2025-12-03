@@ -34,7 +34,7 @@ public class UsersApiController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving users");
-            return StatusCode(500, new { error = "An error occurred while retrieving users" });
+            return StatusCode(500, new { error = "An error occurred while retrieving users", details = ex.Message, innerError = ex.InnerException?.Message });
         }
     }
 
@@ -55,7 +55,7 @@ public class UsersApiController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving user {UserId}", id);
-            return StatusCode(500, new { error = "An error occurred while retrieving the user" });
+            return StatusCode(500, new { error = "An error occurred while retrieving the user", details = ex.Message, innerError = ex.InnerException?.Message });
         }
     }
 
@@ -79,7 +79,7 @@ public class UsersApiController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating user");
-            return StatusCode(500, new { error = "An error occurred while creating the user" });
+            return StatusCode(500, new { error = "An error occurred while creating the user", details = ex.Message, innerError = ex.InnerException?.Message });
         }
     }
 
@@ -107,7 +107,7 @@ public class UsersApiController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating user {UserId}", id);
-            return StatusCode(500, new { error = "An error occurred while updating the user" });
+            return StatusCode(500, new { error = "An error occurred while updating the user", details = ex.Message, innerError = ex.InnerException?.Message });
         }
     }
 
@@ -131,7 +131,7 @@ public class UsersApiController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting user {UserId}", id);
-            return StatusCode(500, new { error = "An error occurred while deleting the user" });
+            return StatusCode(500, new { error = "An error occurred while deleting the user", details = ex.Message, innerError = ex.InnerException?.Message });
         }
     }
 }

@@ -10,13 +10,46 @@ const DEFAULT_PROFILE_PICTURES = [
   { id: 'brain', emoji: '🧠' },
 ]
 
+const COLOR_PRESETS = [
+  { id: 'blue-purple', label: 'Blue to Purple', banner: 'from-blue-600 to-purple-600', frame: 'from-blue-600 to-purple-600' },
+  { id: 'purple-pink', label: 'Purple to Pink', banner: 'from-purple-600 to-pink-600', frame: 'from-purple-600 to-pink-600' },
+  { id: 'green-teal', label: 'Green to Teal', banner: 'from-green-600 to-teal-600', frame: 'from-green-600 to-teal-600' },
+  { id: 'orange-red', label: 'Orange to Red', banner: 'from-orange-600 to-red-600', frame: 'from-orange-600 to-red-600' },
+  { id: 'indigo-blue', label: 'Indigo to Blue', banner: 'from-indigo-600 to-blue-600', frame: 'from-indigo-600 to-blue-600' },
+  { id: 'pink-rose', label: 'Pink to Rose', banner: 'from-pink-600 to-rose-600', frame: 'from-pink-600 to-rose-600' },
+]
+
 export default function GitHubAuthButton({ className }: { className?: string }) {
     const { user, loading, logout } = useAuth();
     const navigate = useNavigate();
     const [showConfirm, setShowConfirm] = useState(false);
-    const [selectedProfilePicture] = useState<string | null>(() => {
+    const [selectedProfilePicture, setSelectedProfilePicture] = useState<string | null>(() => {
         return localStorage.getItem('selected_profile_picture')
     })
+    const [selectedColor, setSelectedColor] = useState<string>(() => {
+        return localStorage.getItem('profile_color') || 'blue-purple'
+    })
+
+    useEffect(() => {
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'selected_profile_picture') {
+                setSelectedProfilePicture(e.newValue)
+            }
+            if (e.key === 'profile_color') {
+                setSelectedColor(e.newValue || 'blue-purple')
+            }
+        }
+        const handleColorChanged = () => {
+            setSelectedColor(localStorage.getItem('profile_color') || 'blue-purple')
+            setSelectedProfilePicture(localStorage.getItem('selected_profile_picture'))
+        }
+        window.addEventListener('storage', handleStorageChange)
+        window.addEventListener('profile-color-changed', handleColorChanged)
+        return () => {
+            window.removeEventListener('storage', handleStorageChange)
+            window.removeEventListener('profile-color-changed', handleColorChanged)
+        }
+    }, [])
 
     useEffect(() => {
         if (showConfirm) {
@@ -49,6 +82,11 @@ export default function GitHubAuthButton({ className }: { className?: string }) 
     const cancelLogout = () => {
         setShowConfirm(false);
     };
+
+    const getColorClasses = () => {
+        const color = COLOR_PRESETS.find(c => c.id === selectedColor) || COLOR_PRESETS[0]
+        return color.frame
+    }
 
     const getProfilePictureEmoji = () => {
         if (selectedProfilePicture) {
@@ -103,7 +141,7 @@ export default function GitHubAuthButton({ className }: { className?: string }) 
                         <div className="flex items-center gap-3">
                             <Link to="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                                 {selectedProfilePicture ? (
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-sm">
+                                    <div key={`header-avatar-${selectedColor}`} className={`w-8 h-8 rounded-full bg-gradient-to-br ${getColorClasses()} flex items-center justify-center text-sm transition-all duration-300`}>
                                         {getProfilePictureEmoji()}
                                     </div>
                                 ) : (
@@ -141,27 +179,27 @@ export default function GitHubAuthButton({ className }: { className?: string }) 
             <div style={{ margin: '1rem 0', padding: '1rem', border: '1px solid #ccc', borderRadius: '4px' }}>
                 {user ? (
                     <div>
-                        <Link to="/profile" style={{ textDecoration: 'none', color: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                        <Link to="/profile" className="inline-flex items-center gap-2.5 no-underline text-inherit cursor-pointer">
                             {selectedProfilePicture ? (
-                                <div style={{ display: 'inline-flex', width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #2563eb, #9333ea)', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+                                <div key={`header-avatar-inline-${selectedColor}`} className={`inline-flex w-10 h-10 rounded-full bg-gradient-to-br ${getColorClasses()} items-center justify-center text-xl transition-all duration-300`}>
                                     {getProfilePictureEmoji()}
                                 </div>
                             ) : (
                                 <img
                                     src={user.avatar_url}
                                     alt={user.login}
-                                    style={{ width: 40, height: 40, borderRadius: '50%' }}
+                                    className="w-10 h-10 rounded-full"
                                 />
                             )}
                             <span>Signed in as <b>{user.login}</b></span>
                             {user.name && <span> ({user.name})</span>}
                         </Link>
-                        <Link to="/profile" style={{ marginLeft: 12, padding: '5px 10px', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', textDecoration: 'none', display: 'inline-block' }}>
+                        <Link to="/profile" className="inline-block ml-3 px-2.5 py-1.25 bg-blue-600 text-white no-underline rounded cursor-pointer hover:bg-blue-700 transition-colors">
                             Profile
                         </Link>
                         <button
                             onClick={handleLogoutClick}
-                            style={{ marginLeft: 12, padding: '5px 10px' }}
+                            className="ml-3 px-2.5 py-1.25 cursor-pointer hover:opacity-80 transition-opacity"
                         >
                             Sign out
                         </button>
@@ -169,7 +207,7 @@ export default function GitHubAuthButton({ className }: { className?: string }) 
                 ) : (
                     <button
                         onClick={handleLogin}
-                        style={{ padding: '8px 16px', backgroundColor: '#333', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        className="px-4 py-2 bg-slate-900 text-white border-none rounded cursor-pointer hover:bg-slate-800 transition-colors"
                     >
                         Sign in with GitHub
                     </button>

@@ -140,7 +140,7 @@ public class AttemptsApiController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving attempts");
-            return StatusCode(500, new { error = "An error occurred while retrieving attempts" });
+            return StatusCode(500, new { error = "An error occurred while retrieving attempts", details = ex.Message, innerError = ex.InnerException?.Message });
         }
     }
 
@@ -191,7 +191,7 @@ public class AttemptsApiController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving attempt {AttemptId}", id);
-            return StatusCode(500, new { error = "An error occurred while retrieving the attempt" });
+            return StatusCode(500, new { error = "An error occurred while retrieving the attempt", details = ex.Message, innerError = ex.InnerException?.Message });
         }
     }
 
@@ -335,7 +335,7 @@ public class AttemptsApiController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving leaderboard for quiz {QuizId}", quizId);
-            return StatusCode(500, new { error = "An error occurred while retrieving the leaderboard" });
+            return StatusCode(500, new { error = "An error occurred while retrieving the leaderboard", details = ex.Message, innerError = ex.InnerException?.Message });
         }
     }
 }

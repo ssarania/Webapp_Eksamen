@@ -147,8 +147,8 @@ public class QuizzesApiController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving quizzes");
-            return StatusCode(500, new { error = "An error occurred while retrieving quizzes" });
+            _logger.LogError(ex, "Error fetching quizzes");
+            return StatusCode(500, new { error = "An error occurred while fetching quizzes", details = ex.Message, innerError = ex.InnerException?.Message });
         }
     }
 
@@ -254,7 +254,7 @@ public class QuizzesApiController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving quiz {QuizId}", id);
-            return StatusCode(500, new { error = "An error occurred while retrieving the quiz" });
+            return StatusCode(500, new { error = "An error occurred while retrieving the quiz", details = ex.Message, innerError = ex.InnerException?.Message });
         }
     }
 
@@ -402,7 +402,7 @@ public class QuizzesApiController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating quiz");
-            return StatusCode(500, new { error = "An error occurred while creating the quiz" });
+            return StatusCode(500, new { error = "An error occurred while creating the quiz", details = ex.Message, innerError = ex.InnerException?.Message });
         }
     }
 
@@ -438,7 +438,8 @@ public class QuizzesApiController : ControllerBase
             quiz.Description = dto.Description;
             quiz.IsPublic = dto.IsPublic;
 
-            // Update questions if provided
+            // Only update questions if explicitly provided AND different from current
+            // Don't update if dto.Questions is null (means don't touch questions)
             if (dto.Questions != null && dto.Questions.Any())
             {
                 // Validate questions
@@ -451,7 +452,18 @@ public class QuizzesApiController : ControllerBase
                         return BadRequest(new { error = "Each question must have exactly one correct answer" });
                 }
 
-                // Remove old questions
+                // Delete all AttemptAnswers for this quiz's questions to avoid foreign key constraint violations
+                var questionIds = quiz.Questions.Select(q => q.Id).ToList();
+                var attemptAnswersToDelete = await _context.AttemptAnswers
+                    .Where(aa => questionIds.Contains(aa.QuestionId))
+                    .ToListAsync();
+                
+                if (attemptAnswersToDelete.Any())
+                {
+                    _context.AttemptAnswers.RemoveRange(attemptAnswersToDelete);
+                }
+
+                // Now remove old questions and options
                 _context.Questions.RemoveRange(quiz.Questions);
                 quiz.Questions.Clear();
 
@@ -482,7 +494,7 @@ public class QuizzesApiController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating quiz {QuizId}", id);
-            return StatusCode(500, new { error = "An error occurred while updating the quiz" });
+            return StatusCode(500, new { error = "An error occurred while updating the quiz", details = ex.Message, innerError = ex.InnerException?.Message });
         }
     }
 

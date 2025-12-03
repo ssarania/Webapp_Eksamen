@@ -247,7 +247,7 @@ namespace BasicProject.Migrations
                     b.HasOne("BasicProject.Data.Entities.QuestionOption", "SelectedOption")
                         .WithMany("AttemptAnswers")
                         .HasForeignKey("SelectedOptionId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Attempt");
 
