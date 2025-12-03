@@ -173,9 +173,20 @@ public class GitHubAuthController : ControllerBase
                 return Unauthorized(new { error = "Not authenticated" });
 
             var claims = User.Claims.ToDictionary(c => c.Type, c => c.Value);
+            
+            // Parse id to long from claim
+            long? userId = null;
+            if (claims.ContainsKey(System.Security.Claims.ClaimTypes.NameIdentifier))
+            {
+                if (long.TryParse(claims[System.Security.Claims.ClaimTypes.NameIdentifier], out var parsedId))
+                {
+                    userId = parsedId;
+                }
+            }
+            
             return Ok(new
             {
-                id = claims.ContainsKey(System.Security.Claims.ClaimTypes.NameIdentifier) ? claims[System.Security.Claims.ClaimTypes.NameIdentifier] : null,
+                id = userId,
                 login = claims.ContainsKey(System.Security.Claims.ClaimTypes.Name) ? claims[System.Security.Claims.ClaimTypes.Name] : null,
                 name = claims.ContainsKey("name") ? claims["name"] : null,
                 email = claims.ContainsKey(System.Security.Claims.ClaimTypes.Email) ? claims[System.Security.Claims.ClaimTypes.Email] : null,

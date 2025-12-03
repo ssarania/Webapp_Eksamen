@@ -2,6 +2,7 @@ using BasicProject.Data;
 using BasicProject.Data.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace BasicProject.Controllers.Api;
 
@@ -19,10 +20,90 @@ public class AttemptsApiController : ControllerBase
     }
 
     /// <summary>
+    /// Get the currently authenticated user's ID from claims or Bearer token
+    /// </summary>
+    private async Task<long?> GetCurrentUserIdAsync()
+    {
+        // First try to get from cookie claims (for traditional cookie-based auth)
+        // Prefer an explicit GitHub id claim if present (added during GitHub OAuth signin)
+        var githubIdClaim = User.FindFirst("github_id");
+        if (githubIdClaim != null && long.TryParse(githubIdClaim.Value, out var githubId))
+        {
+            _logger.LogInformation("User authenticated via cookie claims. GitHubId: {GitHubId}", githubId);
+            return githubId;
+        }
+
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userIdClaim != null && long.TryParse(userIdClaim.Value, out var userId))
+        {
+            _logger.LogInformation("User authenticated via cookie claims. UserId: {UserId}", userId);
+            return userId;
+        }
+
+        // Try to get from Bearer token in Authorization header
+        var authHeader = Request.Headers.Authorization.ToString();
+        
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            var token = authHeader.Substring("Bearer ".Length).Trim();
+            _logger.LogInformation("Bearer token found, validating against GitHub API...");
+            
+            try
+            {
+                using var client = new HttpClient();
+                var userRequest = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/user");
+                userRequest.Headers.Add("Authorization", $"token {token}");
+                userRequest.Headers.Add("User-Agent", "QuizApp");
+                userRequest.Headers.Add("Accept", "application/vnd.github.v3+json");
+
+                var response = await client.SendAsync(userRequest);
+                _logger.LogInformation("GitHub API response status: {StatusCode}", response.StatusCode);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    using var doc = System.Text.Json.JsonDocument.Parse(content);
+                    var root = doc.RootElement;
+                    var githubLogin = root.GetProperty("login").GetString();
+                    _logger.LogInformation("GitHub login from token: {GitHubLogin}", githubLogin);
+
+                    // Find local user by GitHub username
+                    var localUser = await _context.Users.FirstOrDefaultAsync(u => u.UserName == githubLogin);
+                    if (localUser != null)
+                    {
+                        _logger.LogInformation("Local user found for GitHub login {GitHubLogin}. UserId: {UserId}", githubLogin, localUser.Id);
+                        return localUser.Id;
+                    }
+                    else
+                    {
+                        _logger.LogWarning("No local user found for GitHub login: {GitHubLogin}", githubLogin);
+                    }
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("GitHub API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to validate Bearer token against GitHub API");
+            }
+        }
+        else
+        {
+            _logger.LogInformation("No Bearer token in Authorization header");
+        }
+
+        _logger.LogWarning("Authentication failed - user not identified");
+        return null;
+    }
+
+    /// <summary>
     /// Get all attempts (optionally filter by user or quiz)
     /// </summary>
     [HttpGet]
-    public async Task<ActionResult> GetAll([FromQuery] int? userId = null, [FromQuery] int? quizId = null)
+    public async Task<ActionResult> GetAll([FromQuery] long? userId = null, [FromQuery] int? quizId = null)
     {
         try
         {
@@ -125,6 +206,13 @@ public class AttemptsApiController : ControllerBase
 
         try
         {
+            // Get authenticated user
+            var authenticatedUserId = await GetCurrentUserIdAsync();
+            if (authenticatedUserId == null)
+            {
+                return Unauthorized(new { error = "You must be authenticated to submit an attempt" });
+            }
+
             // Verify quiz exists and load questions with correct answers
             var quiz = await _context.Quizzes
                 .Include(q => q.Questions)
@@ -134,10 +222,9 @@ public class AttemptsApiController : ControllerBase
             if (quiz == null)
                 return NotFound(new { error = $"Quiz with ID {dto.QuizId} not found" });
 
-            // Verify user exists
-            var user = await _context.Users.FindAsync(dto.UserId);
-            if (user == null)
-                return NotFound(new { error = $"User with ID {dto.UserId} not found" });
+            // Use authenticated user ID instead of the one from payload
+            var userId = authenticatedUserId.Value;
+            _logger.LogInformation("Authenticated user ID: {UserId}, attempting to submit quiz {QuizId}", userId, dto.QuizId);
 
             // Validate answers
             if (dto.Answers.Count != quiz.Questions.Count)
@@ -147,7 +234,7 @@ public class AttemptsApiController : ControllerBase
             var attempt = new Attempt
             {
                 QuizId = dto.QuizId,
-                UserId = dto.UserId,
+                UserId = userId,
                 AttemptedAt = DateTime.UtcNow,
                 CompletedAt = DateTime.UtcNow,
                 TotalQuestions = quiz.Questions.Count
@@ -161,6 +248,18 @@ public class AttemptsApiController : ControllerBase
                 var question = quiz.Questions.FirstOrDefault(q => q.Id == answerDto.QuestionId);
                 if (question == null)
                     return BadRequest(new { error = $"Question with ID {answerDto.QuestionId} not found in this quiz" });
+
+                // Skip questions that weren't answered (selectedOptionId = 0)
+                if (answerDto.SelectedOptionId == 0)
+                {
+                    attempt.Answers.Add(new AttemptAnswer
+                    {
+                        QuestionId = answerDto.QuestionId,
+                        SelectedOptionId = null, // Store as null instead of 0
+                        IsCorrect = false
+                    });
+                    continue;
+                }
 
                 var selectedOption = question.Options.FirstOrDefault(o => o.Id == answerDto.SelectedOptionId);
                 if (selectedOption == null)
@@ -180,8 +279,10 @@ public class AttemptsApiController : ControllerBase
 
             attempt.Score = correctCount;
 
+            _logger.LogInformation("Adding attempt to database. UserId: {UserId}, QuizId: {QuizId}, Score: {Score}", userId, dto.QuizId, correctCount);
             _context.Attempts.Add(attempt);
             await _context.SaveChangesAsync();
+            _logger.LogInformation("Attempt saved successfully. AttemptId: {AttemptId}", attempt.Id);
 
             return CreatedAtAction(nameof(GetById), new { id = attempt.Id }, new
             {
@@ -195,7 +296,12 @@ public class AttemptsApiController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error submitting attempt");
-            return StatusCode(500, new { error = "An error occurred while submitting the attempt" });
+            return StatusCode(500, new { 
+                error = "An error occurred while submitting the attempt",
+                details = ex.Message,
+                innerError = ex.InnerException?.Message,
+                stackTrace = ex.StackTrace
+            });
         }
     }
 
@@ -237,7 +343,7 @@ public class AttemptsApiController : ControllerBase
 public class SubmitAttemptDto
 {
     public int QuizId { get; set; }
-    public int UserId { get; set; }
+    public long UserId { get; set; }
     public List<AnswerDto> Answers { get; set; } = new();
 }
 

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import api from '../services/api'
+import { quizService, attemptService } from '../services'
 import type { QuizDetail as QuizDetailType } from '../types'
+import { useAuth } from '../context/AuthContext'
 
 // Floating background accent shapes
 function FloatingShapes() {
@@ -72,6 +73,7 @@ export default function QuizDetail() {
 	const [score, setScore] = useState<number | null>(null)
 	const [current, setCurrent] = useState(0)
 	const [togglingPublic, setTogglingPublic] = useState(false)
+	const { user } = useAuth()
 
 	useEffect(() => {
 		if (!id) {
@@ -83,7 +85,7 @@ export default function QuizDetail() {
 	async function fetchQuiz() {
 		try {
 			// Fetch from API with includeAnswers=true so we can check correct answers
-			const q = await api.getQuizById(id as string, true)
+			const q = await quizService.getQuizById(id as string, true)
 			if (mounted) setQuiz(q)
 		} catch (err) {
 			// API failed - show error
@@ -110,25 +112,43 @@ export default function QuizDetail() {
 		setCurrent(c => Math.max(0, c - 1))
 	}
 
-	function onSubmit(e?: React.FormEvent) {
-		if (e) e.preventDefault()
-		if (!quiz) return
-		let correct = 0
-		quiz.questions.forEach((q: any) => {
-			const selected = answers[q.id] ?? null
-			const found = q.options.find((o: any) => o.isCorrect)
-			if (found && selected === found.id) correct += 1
-		})
-		setScore(correct)
-		setSubmitted(true)
-	}
+	async function onSubmit(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+    if (!quiz) return;
+
+    if (!user) {
+        setError("You must be logged in to submit a quiz.");
+        return;
+    }
+
+    // Build answers array for backend
+    const answersPayload = quiz.questions.map((q: any) => ({
+        questionId: q.id,
+        selectedOptionId: answers[q.id] ?? 0
+    }));
+
+    try {
+        const result = await attemptService.submitAttempt({
+            quizId: quiz.id,
+            userId: Number(user.id), // Ensure it's a number
+            answers: answersPayload
+        });
+
+        setScore(result.score);
+        setSubmitted(true);
+
+    } catch (err: any) {
+        console.error(err);
+        setError("Failed to submit attempt.");
+    }
+}
 
 	async function togglePublic() {
 		if (!quiz) return
 		setTogglingPublic(true)
 		try {
 			const newIsPublic = !(quiz.isPublic ?? false)
-			await api.updateQuiz(quiz.id, { isPublic: newIsPublic })
+			await quizService.updateQuiz(quiz.id, { isPublic: newIsPublic })
 			setQuiz({ ...quiz, isPublic: newIsPublic })
 		} catch (err) {
 			alert('Failed to update quiz visibility. Please try again.')
@@ -193,18 +213,26 @@ export default function QuizDetail() {
 							</div>
 
 							<div className="w-full max-w-3xl flex items-center justify-between gap-4">
-								<button type="button" onClick={goPrev} disabled={current === 0} className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm disabled:opacity-50">
+								<button type="button" onClick={goPrev} disabled={current === 0} className="cursor-pointer px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
 									← Previous
 								</button>
 
 								<div className="flex-1 text-center text-sm text-slate-600">Question {current + 1} / {total}</div>
 
 								{current < total - 1 ? (
-									<button type="button" onClick={goNext} disabled={answers[quiz.questions[current].id] == null} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg shadow-md disabled:opacity-50">
-										Next →
-									</button>
+									<>
+										{ (!answers[quiz.questions[current].id]) ? (
+											<button type="button" onClick={goNext} className="cursor-pointer px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
+												Skip →
+											</button>
+												) : (
+											<button type="button" onClick={goNext} className="cursor-pointer px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
+												Next →
+											</button>
+										)}
+									</>
 								) : (
-									<button type="submit" disabled={answers[quiz.questions[current].id] == null} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg shadow-md disabled:opacity-50">
+									<button type="submit" disabled={!answers[quiz.questions[current].id]} className="cursor-pointer px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
 										Submit
 									</button>
 								)}

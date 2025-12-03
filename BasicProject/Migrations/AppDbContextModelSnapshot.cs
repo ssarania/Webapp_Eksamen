@@ -74,7 +74,7 @@ namespace BasicProject.Migrations
                     b.Property<int>("QuestionId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("SelectedOptionId")
+                    b.Property<int?>("SelectedOptionId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -95,6 +95,10 @@ namespace BasicProject.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Explanation")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<int>("Order")
                         .HasColumnType("integer");
@@ -243,8 +247,7 @@ namespace BasicProject.Migrations
                     b.HasOne("BasicProject.Data.Entities.QuestionOption", "SelectedOption")
                         .WithMany("AttemptAnswers")
                         .HasForeignKey("SelectedOptionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Attempt");
 

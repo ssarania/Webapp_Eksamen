@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import api from '../services/api'
+import { quizService, attemptService } from '../services'
 import type { QuizSummary } from '../types'
+import { useAuth } from '../context/AuthContext'
+
 
 interface Attempt {
 	id: number
@@ -13,29 +15,81 @@ interface Attempt {
 }
 
 export default function Dashboard() {
+	const { user } = useAuth()
 	const [quizzes, setQuizzes] = useState<QuizSummary[]>([])
 	const [attempts, setAttempts] = useState<Attempt[]>([])
-	const [loading, setLoading] = useState(true)
+	const [quizzesPage, setQuizzesPage] = useState(1)
+	const [deletingQuizId, setDeletingQuizId] = useState<number | null>(null)
+	const quizzesPerPage = 6
+	
 
 	useEffect(() => {
 		async function loadData() {
 			try {
-				const quizList = await api.getQuizzes()
+				const quizList = await quizService.getMyQuizzes()
 				setQuizzes(quizList)
-				// TODO: Add attempts endpoint when available
-				setAttempts([])
+				
+				// Load user attempts if logged in
+				if (user) {
+					try {
+						const attemptRecords = await attemptService.getUserAttempts(user.id)
+						// Map API response to Dashboard Attempt interface
+						const mappedAttempts = attemptRecords.map(record => ({
+							id: record.id,
+							quizId: record.quizId,
+							quizTitle: record.quizTitle,
+							score: record.score,
+							total: record.totalQuestions,
+							timestamp: record.completedAt || record.attemptedAt
+						}))
+						setAttempts(mappedAttempts)
+					} catch (err) {
+						console.error('Failed to load attempts:', err)
+						// Don't fail the whole dashboard if attempts fail
+						setAttempts([])
+					}
+				} else {
+					setAttempts([])
+				}
 			} catch (err) {
 				console.error('Failed to load dashboard data:', err)
-			} finally {
-				setLoading(false)
 			}
 		}
 		loadData()
-	}, [])
+	}, [user])
+
+	const handleDeleteQuiz = async (quizId: number) => {
+		if (!window.confirm('Are you sure you want to delete this quiz? This action cannot be undone.')) {
+			return
+		}
+
+		try {
+			setDeletingQuizId(quizId)
+			await quizService.deleteQuiz(quizId)
+			setQuizzes(quizzes.filter(q => q.id !== quizId))
+			// Reset to first page if we're beyond the new total
+			const newTotal = quizzes.length - 1
+			const newTotalPages = Math.ceil(newTotal / quizzesPerPage)
+			if (quizzesPage > newTotalPages) {
+				setQuizzesPage(Math.max(1, newTotalPages))
+			}
+		} catch (err) {
+			console.error('Failed to delete quiz:', err)
+			alert('Failed to delete quiz. Please try again.')
+		} finally {
+			setDeletingQuizId(null)
+		}
+	}
 
 	const totalQuizzes = quizzes.length
 	const totalAttempts = attempts.length
 	const recent = attempts.slice(0, 5)
+	
+	// Pagination for quizzes
+	const totalPages = Math.ceil(quizzes.length / quizzesPerPage)
+	const startIndex = (quizzesPage - 1) * quizzesPerPage
+	const endIndex = startIndex + quizzesPerPage
+	const paginatedQuizzes = quizzes.slice(startIndex, endIndex)
 
 	return (
 		<div className="min-h-screen bg-gradient-to-b from-white via-blue-50/30 to-white py-12 relative overflow-hidden">
@@ -102,23 +156,24 @@ export default function Dashboard() {
 						</div>
 					</div>
 
-					{/* Recent Activity Card */}
+					{/* Questions Answered Card */}
 					<div className="group animate-fade-in-up delay-300">
 						<div className="relative h-full bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-8 border border-slate-100 dark:border-slate-700 transition-all duration-300 hover:shadow-2xl hover:scale-105 cursor-default">
 							<div className="absolute inset-0 bg-gradient-to-br from-pink-50 to-transparent dark:from-pink-900/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 							<div className="relative">
 								<div className="flex items-center justify-between mb-4">
-									<div className="text-sm font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">Recent Activity</div>
+									<div className="text-sm font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">Questions Answered</div>
 									<div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center text-white shadow-md">
 										<svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
-											<path fillRule="evenodd" d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.3A4.5 4.5 0 1113.5 13H11V9.413l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13H5.5z" clipRule="evenodd" />
+											<path d="M7 10l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+											<path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16z" clipRule="evenodd" opacity="0.15" />
 										</svg>
 									</div>
 								</div>
 								<div className="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white mb-2">
-									{recent.length}
+									{attempts.reduce((sum, a) => sum + a.total, 0)}
 								</div>
-								<p className="text-sm text-slate-500 dark:text-slate-400">Items in your feed</p>
+								<p className="text-sm text-slate-500 dark:text-slate-400">Total questions answered across all attempts</p>
 							</div>
 						</div>
 					</div>
@@ -134,7 +189,7 @@ export default function Dashboard() {
 									<div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
 										📝
 									</div>
-									Recent Attempts
+									Recent Activity
 								</h2>
 								<p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Your latest quiz performance</p>
 							</div>
@@ -212,48 +267,90 @@ export default function Dashboard() {
 										<p className="text-sm text-slate-400 dark:text-slate-500 mt-1">Create your first quiz to get started!</p>
 									</div>
 								) : (
-									<ul className="space-y-3">
-										{quizzes.slice(0, 6).map((q, idx) => (
-											<li key={q.id} className="group/item animate-fade-in-up" style={{ animationDelay: `${100 + idx * 50}ms` }}>
-												<div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 transition-all duration-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:shadow-md hover:translate-x-1 border border-slate-100 dark:border-slate-600">
-													<div className="flex items-start justify-between">
-														<div className="flex-1">
-															<Link to={`/quizzes/${q.id}`} className="font-semibold text-slate-900 dark:text-white group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400 transition-colors hover:underline">
-																{q.title}
-															</Link>
-															<p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-																{q.questionCount} question{q.questionCount !== 1 ? 's' : ''}
-															</p>
-														</div>
-														<div className="text-right flex flex-col items-end gap-2">
-															<div>
-																<p className="text-xs text-slate-500 dark:text-slate-400">
-																	{q.createdAt ? new Date(q.createdAt).toLocaleDateString() : 'Recently'}
+									<>
+										<ul className="space-y-3">
+											{paginatedQuizzes.map((q, idx) => (
+												<li key={q.id} className="group/item animate-fade-in-up" style={{ animationDelay: `${100 + idx * 50}ms` }}>
+													<div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 transition-all duration-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:shadow-md hover:translate-x-1 border border-slate-100 dark:border-slate-600">
+														<div className="flex items-start justify-between">
+															<div className="flex-1">
+																<Link to={`/quizzes/${q.id}`} className="font-semibold text-slate-900 dark:text-white group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400 transition-colors hover:underline">
+																	{q.title}
+																</Link>
+																<p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+																	{q.questionCount} question{q.questionCount !== 1 ? 's' : ''}
 																</p>
-																<div className="mt-2 inline-block px-3 py-1 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
-																	Ready
+															</div>
+															<div className="text-right flex flex-col items-end gap-2">
+																<div>
+																	<p className="text-xs text-slate-500 dark:text-slate-400">
+																		{q.createdAt ? new Date(q.createdAt).toLocaleDateString() : 'Recently'}
+																	</p>
+																	<div className="mt-2 inline-block px-3 py-1 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
+																		Ready
+																	</div>
+																</div>
+																<div className="flex gap-1">
+																	<Link
+																		to={`/quizzes/${q.id}/edit`}
+																		className="px-2 py-1 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-600 rounded transition"
+																		title="Edit quiz"
+																	>
+																		✏️ Edit
+																	</Link>
+																	<button
+																		onClick={() => handleDeleteQuiz(q.id)}
+																		disabled={deletingQuizId === q.id}
+																		className="px-2 py-1 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
+																		title="Delete quiz"
+																	>
+																		{deletingQuizId === q.id ? '⌛ Deleting...' : '🗑️ Delete'}
+																	</button>
 																</div>
 															</div>
-															<Link
-																to={`/quizzes/${q.id}/edit`}
-																className="px-2 py-1 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-600 rounded transition"
-																title="Edit quiz"
-															>
-																✏️ Edit
-															</Link>
 														</div>
 													</div>
+												</li>
+											))}
+										</ul>
+
+										{/* Pagination Controls */}
+										{totalPages > 1 && (
+											<div className="mt-6 flex items-center justify-center gap-2">
+												<button
+													onClick={() => setQuizzesPage(Math.max(1, quizzesPage - 1))}
+													disabled={quizzesPage === 1}
+													className="px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-600"
+												>
+													← Previous
+												</button>
+												
+												<div className="flex gap-1">
+													{Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+														<button
+															key={page}
+															onClick={() => setQuizzesPage(page)}
+															className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${
+																quizzesPage === page
+																	? 'bg-blue-600 text-white'
+																	: 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-600'
+															}`}
+														>
+															{page}
+														</button>
+													))}
 												</div>
-											</li>
-										))}
-										{quizzes.length > 6 && (
-											<li className="text-center pt-2">
-												<p className="text-sm text-slate-500 dark:text-slate-400">
-													+{quizzes.length - 6} more quiz{quizzes.length - 6 !== 1 ? 'zes' : ''}
-												</p>
-											</li>
+
+												<button
+													onClick={() => setQuizzesPage(Math.min(totalPages, quizzesPage + 1))}
+													disabled={quizzesPage === totalPages}
+													className="px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-600"
+												>
+													Next →
+												</button>
+											</div>
 										)}
-									</ul>
+									</>
 								)}
 							</div>
 						</div>

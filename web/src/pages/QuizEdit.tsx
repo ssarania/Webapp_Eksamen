@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { CreateQuizDto } from '../types'
-import api from '../services/api'
+import { quizService } from '../services'
 
 type Option = { text: string; isCorrect?: boolean }
-type Q = { text: string; options: Option[] }
+type Q = { text: string; explanation?: string; options: Option[] }
 
 function IconTrash() {
 	return (
@@ -30,7 +30,7 @@ function OptionRow({ option, qi, oi, onText, onSetCorrect, onRemove, disableRemo
 				name={`correct-${qi}`}
 				checked={!!option.isCorrect}
 				onChange={onSetCorrect}
-				className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-200"
+				className="cursor-pointer w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-200"
 				aria-label={`Select correct option ${oi + 1}`}
 			/>
 			<input
@@ -43,7 +43,7 @@ function OptionRow({ option, qi, oi, onText, onSetCorrect, onRemove, disableRemo
 				type="button"
 				onClick={onRemove}
 				disabled={disableRemove}
-				className="p-2 rounded-md text-red-600 hover:bg-red-50 disabled:opacity-40"
+				className="cursor-pointer p-2 rounded-md text-red-600 hover:bg-red-50 disabled:opacity-40"
 				aria-label="Remove option"
 			>
 				<IconTrash />
@@ -52,10 +52,11 @@ function OptionRow({ option, qi, oi, onText, onSetCorrect, onRemove, disableRemo
 	)
 }
 
-function QuestionCard({ q, qi, onUpdateText, onAddOption, onUpdateOption, onSetCorrect, onRemoveQuestion, onRemoveOption }: {
+function QuestionCard({ q, qi, onUpdateText, onUpdateExplanation, onAddOption, onUpdateOption, onSetCorrect, onRemoveQuestion, onRemoveOption }: {
 	q: Q
 	qi: number
 	onUpdateText: (text: string) => void
+	onUpdateExplanation: (explanation: string) => void
 	onAddOption: () => void
 	onUpdateOption: (oi: number, text: string) => void
 	onSetCorrect: (oi: number) => void
@@ -65,17 +66,19 @@ function QuestionCard({ q, qi, onUpdateText, onAddOption, onUpdateOption, onSetC
 	return (
 		<div className="bg-white dark:bg-slate-800 rounded-2xl shadow-md p-6 space-y-4 transform transition hover:shadow-xl">
 			<div className="flex items-start justify-between gap-4">
-				<div className="flex-1">
-					<label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Question {qi + 1}</label>
-					<input
-						value={q.text}
-						onChange={e => onUpdateText(e.target.value)}
-						placeholder="Enter your question"
-						className="mt-1 w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm transition"
-					/>
+				<div className="flex-1 space-y-3">
+					<div>
+						<label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Question {qi + 1}</label>
+						<input
+							value={q.text}
+							onChange={e => onUpdateText(e.target.value)}
+							placeholder="Enter your question"
+							className="mt-1 w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm transition"
+						/>
+					</div>
 				</div>
 				<div className="ml-2 flex-shrink-0">
-					<button type="button" onClick={onRemoveQuestion} className="inline-flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md text-sm hover:shadow transition">
+					<button type="button" onClick={onRemoveQuestion} className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md text-sm hover:shadow transition">
 						Delete
 					</button>
 				</div>
@@ -97,15 +100,28 @@ function QuestionCard({ q, qi, onUpdateText, onAddOption, onUpdateOption, onSetC
 			</div>
 
 			<div className="flex items-center justify-between">
-				<button
-					type="button"
-					onClick={onAddOption}
-					disabled={q.options.length >= 4}
-					className="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md shadow-sm hover:shadow-md transition text-sm"
-				>
-					+ Add option
-				</button>
+				{q.options.length < 4 && (
+					<button
+						type="button"
+						onClick={onAddOption}
+						disabled={q.options.length >= 4}
+						className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md shadow-sm hover:shadow-md transition text-sm"
+					>
+						+ Add option
+					</button>
+				)}
 				<div className="text-sm text-slate-500">{q.options.length} options</div>
+			</div>
+
+			<div>
+				<label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Explanation (optional)</label>
+				<textarea
+					value={q.explanation || ''}
+					onChange={e => onUpdateExplanation(e.target.value)}
+					placeholder="Explain the correct answer (shown after quiz submission)"
+					className="mt-1 w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm transition"
+					rows={2}
+				/>
 			</div>
 		</div>
 	)
@@ -118,7 +134,7 @@ export default function QuizEdit() {
 	const [description, setDescription] = useState('')
 	const [isPublic, setIsPublic] = useState(false)
 	const [questions, setQuestions] = useState<Q[]>([
-		{ text: 'Untitled question', options: [{ text: 'Option 1', isCorrect: true }, { text: 'Option 2' }] }
+		{ text: 'Untitled question', explanation: '', options: [{ text: 'Option 1', isCorrect: true }, { text: 'Option 2' }] }
 	])
 	const [error, setError] = useState<string | null>(null)
 	const [saving, setSaving] = useState(false)
@@ -130,7 +146,7 @@ export default function QuizEdit() {
 		async function loadQuiz() {
 			if (!id) return
 			try {
-				const quiz = await api.getQuizById(id)
+				const quiz = await quizService.getQuizById(id, true)
 				if (mounted) {
 					setTitle(quiz.title || '')
 					setDescription(quiz.description || '')
@@ -139,6 +155,7 @@ export default function QuizEdit() {
 						setQuestions(
 							quiz.questions.map(q => ({
 								text: q.text,
+								explanation: q.explanation || '',
 								options: q.options.map(o => ({ text: o.text, isCorrect: o.isCorrect ?? false }))
 							}))
 						)
@@ -159,7 +176,7 @@ export default function QuizEdit() {
 	}, [id])
 
 	function addQuestion() {
-		setQuestions(s => [...s, { text: '', options: [{ text: '', isCorrect: true }, { text: '' }] }])
+		setQuestions(s => [...s, { text: '', explanation: '', options: [{ text: '', isCorrect: true }, { text: '' }] }])
 	}
 
 	function removeQuestion(i: number) {
@@ -201,13 +218,17 @@ export default function QuizEdit() {
 			title: title.trim(),
 			description: description.trim(),
 			isPublic: isPublic,
-			questions: questions.map(q => ({ text: q.text, options: q.options.map(o => ({ text: o.text, isCorrect: !!o.isCorrect })) }))
+			questions: questions.map(q => ({ 
+				text: q.text, 
+				explanation: q.explanation?.trim() || '',
+				options: q.options.map(o => ({ text: o.text, isCorrect: !!o.isCorrect })) 
+			}))
 		}
 
 		try {
 			setSaving(true)
 			if (id) {
-				await api.updateQuiz(parseInt(id), dto)
+				await quizService.updateQuiz(parseInt(id), dto)
 				navigate(`/quizzes/${id}`)
 			}
 		} catch (err: any) {
@@ -265,7 +286,7 @@ export default function QuizEdit() {
 										<button
 											type="button"
 											onClick={() => setIsPublic(!isPublic)}
-											className={`ml-4 flex-shrink-0 relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+											className={`ml-4 flex-shrink-0 relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer transition-colors ${
 												isPublic ? 'bg-green-600' : 'bg-slate-300'
 											}`}
 										>
@@ -282,11 +303,6 @@ export default function QuizEdit() {
 							<section className="space-y-4">
 								<div className="flex items-center justify-between">
 									<h2 className="text-lg font-semibold text-slate-900 dark:text-white">Questions</h2>
-									<div>
-										<button type="button" onClick={addQuestion} className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg shadow-md hover:shadow-2xl transition text-sm">
-											+ Add question
-										</button>
-									</div>
 								</div>
 
 								<div className="space-y-4">
@@ -296,6 +312,7 @@ export default function QuizEdit() {
 												q={q}
 												qi={qi}
 												onUpdateText={text => updateQuestion(qi, { text })}
+												onUpdateExplanation={explanation => updateQuestion(qi, { explanation })}
 												onAddOption={() => addOption(qi)}
 												onUpdateOption={(oi, text) => updateOption(qi, oi, text)}
 												onSetCorrect={(oi) => setCorrect(qi, oi)}
@@ -304,15 +321,20 @@ export default function QuizEdit() {
 											/>
 										</div>
 									))}
+									<div>
+										<button type="button" onClick={addQuestion} className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg shadow-md hover:shadow-2xl transition text-sm">
+											+ Add question
+										</button>
+									</div>
 								</div>
 							</section>
 
 							<div className="flex items-center gap-4">
 								<div className="flex-1" />
-								<button type="button" onClick={() => navigate(-1)} className="inline-flex items-center gap-2 px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl transition">
+								<button type="button" onClick={() => navigate(-1)} className="cursor-pointer inline-flex items-center gap-2 px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl transition">
 									Cancel
 								</button>
-								<button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl shadow-lg hover:shadow-2xl transition disabled:opacity-60">
+								<button type="submit" disabled={saving} className="cursor-pointer inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl shadow-lg hover:shadow-2xl transition disabled:opacity-60">
 									{saving ? 'Saving…' : 'Save Changes'}
 								</button>
 							</div>

@@ -73,13 +73,13 @@ export default function GitHubAuthButton({ className }: { className?: string }) 
                 <div className="flex gap-3 justify-end">
                     <button
                         onClick={cancelLogout}
-                        className="px-4 py-2 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white font-medium hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                        className="cursor-pointer px-4 py-2 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white font-medium hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={confirmLogout}
-                        className="px-4 py-2 rounded-md bg-red-600 text-white font-medium hover:bg-red-700 transition-colors"
+                        className="cursor-pointer px-4 py-2 rounded-md bg-red-600 text-white font-medium hover:bg-red-700 transition-colors"
                     >
                         Sign Out
                     </button>
@@ -117,12 +117,12 @@ export default function GitHubAuthButton({ className }: { className?: string }) 
                                     <div className="font-medium">{user.login}</div>
                                 </div>
                             </Link>
-                            <button onClick={handleLogoutClick} className="text-sm px-3 py-1 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                            <button onClick={handleLogoutClick} className="cursor-pointer text-sm px-3 py-1 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                                 Sign out
                             </button>
                         </div>
                     ) : (
-                        <button onClick={handleLogin} className={className}>
+                        <button onClick={handleLogin} className={className + " cursor-pointer"}>
                             Sign In
                         </button>
                     )}

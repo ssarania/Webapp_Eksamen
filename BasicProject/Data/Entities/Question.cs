@@ -10,6 +10,9 @@ namespace BasicProject.Data.Entities
         [StringLength(500)]
         public string Text { get; set; } = string.Empty;
 
+        [StringLength(1000)]
+        public string? Explanation { get; set; }
+
         public int QuizId { get; set; }
         public Quiz? Quiz { get; set; }
 

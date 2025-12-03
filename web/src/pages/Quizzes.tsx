@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import api from '../services/api'
+import { quizService } from '../services'
 import type { QuizSummary } from '../types'
+import { useAuth } from '../context/AuthContext'
 
 // Floating Background Elements Component
 function BackgroundFloaters() {
@@ -18,7 +19,7 @@ function BackgroundFloaters() {
 }
 
 // Individual Quiz Card Component
-function QuizCardItem({ q, index, onDelete, onTogglePublic }: { q: QuizSummary; index: number; onDelete: (id: number) => void; onTogglePublic: (id: number, isPublic: boolean) => void }) {
+function QuizCardItem({ q, index, onDelete, onTogglePublic: _onTogglePublic }: { q: QuizSummary; index: number; onDelete: (id: number) => void; onTogglePublic: (id: number, isPublic: boolean) => void }) {
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 	const isPublic = q.isPublic ?? false
 
@@ -70,6 +71,17 @@ function QuizCardItem({ q, index, onDelete, onTogglePublic }: { q: QuizSummary; 
 							</svg>
 							{q.questionCount} question{q.questionCount !== 1 ? 's' : ''}
 						</div>
+						{q.authorName && (
+							<>
+								<div className="w-px h-4 bg-slate-300 dark:bg-slate-600" />
+								<div className="flex items-center gap-1">
+									<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
+										<path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+									</svg>
+									<span>{q.authorName}</span>
+								</div>
+							</>
+						)}
 						<div className="w-px h-4 bg-slate-300 dark:bg-slate-600" />
 						<span>
 							{q.createdAt ? new Date(q.createdAt).toLocaleDateString() : 'Recently'}
@@ -144,21 +156,50 @@ function QuizCardItem({ q, index, onDelete, onTogglePublic }: { q: QuizSummary; 
 
 export default function Quizzes() {
 	const [quizzes, setQuizzes] = useState<QuizSummary[]>([])
+	const [loading, setLoading] = useState(true)
 	const [filter, setFilter] = useState('')
+	const [filterMode, setFilterMode] = useState<'public' | 'mine'>('public')
 	const [sort, setSort] = useState<'new' | 'alpha'>('new')
 	const [page, setPage] = useState(1)
 	const pageSize = 12
+	const { user: currentUser } = useAuth()
+	const currentUserId = useMemo(() => {
+		if (!currentUser) return null
+		const numericId = typeof currentUser.id === 'number' ? currentUser.id : Number(currentUser.id)
+		return Number.isNaN(numericId) ? null : numericId
+	}, [currentUser])
+	const isMineDisabled = currentUserId === null
+
+	const handleFilterModeChange = (mode: 'public' | 'mine') => {
+		if (mode === filterMode) return
+		setFilterMode(mode)
+		setPage(1)
+	}
 
 	useEffect(() => {
 		let mounted = true
-		api.getQuizzes().then(list => { if (mounted) setQuizzes(list) })
+		setLoading(true)
+		quizService.getQuizzes().then(list => { 
+			if (mounted) {
+				setQuizzes(list)
+				setLoading(false)
+			}
+		}).catch(() => {
+			if (mounted) setLoading(false)
+		})
 		return () => { mounted = false }
 	}, [])
+
+	useEffect(() => {
+		if (filterMode === 'mine' && currentUserId === null) {
+			setFilterMode('public')
+		}
+	}, [filterMode, currentUserId])
 
 	async function handleDelete(id: number) {
 		if (!confirm('Delete this quiz?')) return
 		try {
-			await api.deleteQuiz(id)
+			await quizService.deleteQuiz(id)
 			setQuizzes(prev => prev.filter(q => q.id !== id))
 		} catch (err) {
 			alert('Failed to delete quiz')
@@ -168,7 +209,7 @@ export default function Quizzes() {
 
 	async function handleTogglePublic(id: number, currentIsPublic: boolean) {
 		try {
-			await api.updateQuiz(id, { isPublic: !currentIsPublic })
+			await quizService.updateQuiz(id, { isPublic: !currentIsPublic })
 			setQuizzes(prev => prev.map(q => q.id === id ? { ...q, isPublic: !currentIsPublic } : q))
 		} catch (err) {
 			alert('Failed to update quiz visibility. Please try again.')
@@ -176,12 +217,18 @@ export default function Quizzes() {
 	}
 
 	const filtered = useMemo(() => {
-		const f = (filter || '').toLowerCase()
-		let out = quizzes.filter(q => (q.title + ' ' + (q.authorName ?? '') + ' ' + (q.description ?? '')).toLowerCase().includes(f))
+		const normalizedFilter = (filter || '').toLowerCase()
+		let out = quizzes.filter(q => {
+			const matchesText = (q.title + ' ' + (q.authorName ?? '') + ' ' + (q.description ?? '')).toLowerCase().includes(normalizedFilter)
+			const matchesMode = filterMode === 'public'
+				? (q.isPublic ?? false)
+				: (currentUserId !== null && q.authorId === currentUserId)
+			return matchesText && matchesMode
+		})
 		if (sort === 'alpha') out = out.sort((a, b) => a.title.localeCompare(b.title))
 		else out = out.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
 		return out
-	}, [quizzes, filter, sort])
+	}, [quizzes, filter, sort, filterMode, currentUserId])
 
 	const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
 	const pageItems = filtered.slice((page - 1) * pageSize, page * pageSize)
@@ -205,44 +252,119 @@ export default function Quizzes() {
 				{/* Search & Sort Bar */}
 				<div className="mb-12 animate-fade-in-up delay-100">
 					<div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-md rounded-2xl shadow-lg p-6 border border-white/30 dark:border-slate-700/30">
-						<div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-							{/* Search Input */}
-							<div className="relative w-full md:flex-1">
-								<svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
-									<path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-								</svg>
-								<input
-									type="text"
-									placeholder="Search quizzes by title, author or description..."
-									value={filter}
-									onChange={e => { setFilter(e.target.value); setPage(1) }}
-									className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 dark:focus:ring-offset-0 transition-all"
-								/>
+						<div className="flex flex-col gap-6">
+							<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+								<div className="flex flex-col sm:flex-row sm:items-center gap-3">
+									<span className="text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Show</span>
+									<div className="inline-flex rounded-full bg-slate-100 dark:bg-slate-900 p-1">
+										<button
+											type="button"
+											onClick={() => handleFilterModeChange('public')}
+											className={`px-4 py-2 text-sm font-semibold cursor-pointer rounded-full transition-all duration-200 ${filterMode === 'public' ? 'bg-white text-slate-900 dark:text-slate-900 shadow' : 'text-slate-500 dark:text-slate-400'}`}
+											aria-pressed={filterMode === 'public'}
+										>
+											Public
+										</button>
+										<button
+											type="button"
+											onClick={() => !isMineDisabled && handleFilterModeChange('mine')}
+											disabled={isMineDisabled}
+											className={`px-4 py-2 text-sm font-semibold cursor-pointer rounded-full transition-all duration-200 ${filterMode === 'mine' ? 'bg-white text-slate-900 dark:text-slate-900 shadow' : 'text-slate-500 dark:text-slate-400'} ${isMineDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+											aria-pressed={filterMode === 'mine'}
+											title={isMineDisabled ? 'Sign in to view your quizzes' : 'Show quizzes you created'}
+										>
+											My Quizzes
+										</button>
+									</div>
+								</div>
+								{isMineDisabled && (
+									<p className="text-xs text-slate-500 dark:text-slate-400">
+										Sign in to jump into your own quizzes.
+									</p>
+								)}
 							</div>
 
-							{/* Sort Dropdown */}
-							<select
-								value={sort}
-								onChange={e => { setSort(e.target.value as 'new' | 'alpha'); setPage(1) }}
-								className="px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all min-w-max"
-							>
-								<option value="new">Newest First</option>
-								<option value="alpha">A → Z</option>
-							</select>
+							<div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+								{/* Search Input */}
+								<div className="relative w-full md:flex-1">
+									<svg className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
+										<path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+									</svg>
+									<input
+										type="text"
+										placeholder="Search quizzes by title, author or description..."
+										value={filter}
+										onChange={e => { setFilter(e.target.value); setPage(1) }}
+										className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 dark:focus:ring-offset-0 transition-all"
+									/>
+								</div>
 
-							{/* Create Quiz Button */}
-							<Link
-								to="/quiz-creation/create"
-								className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transition-all duration-200 text-center"
-							>
-								+ Create Quiz
-							</Link>
+								{/* Sort Dropdown */}
+								<select
+									value={sort}
+									onChange={e => { setSort(e.target.value as 'new' | 'alpha'); setPage(1) }}
+									className="px-4 py-3 bg-white dark:bg-slate-900 cursor-pointer border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all min-w-max"
+								>
+									<option value="new">Newest First</option>
+									<option value="alpha">A → Z</option>
+								</select>
+
+								{/* Create Quiz Button */}
+								<Link
+									to="/quiz-creation/create"
+									className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:shadow-lg transition-all duration-200 text-center"
+								>
+									+ Create Quiz
+								</Link>
+							</div>
 						</div>
 					</div>
 				</div>
 
 				{/* Quiz Grid or Empty State */}
-				{filtered.length === 0 ? (
+				{loading ? (
+					/* Loading Skeleton */
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+						{Array.from({ length: 9 }).map((_, idx) => (
+							<div
+								key={idx}
+								className="animate-fade-in-up"
+								style={{ animationDelay: `${idx * 50}ms` }}
+							>
+								<article className="relative h-full bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden">
+									<div className="relative p-6 h-full flex flex-col">
+										{/* Header Skeleton */}
+										<div className="mb-4">
+											<div className="h-6 bg-slate-200 dark:bg-slate-700 rounded animate-pulse w-3/4 mb-2" />
+										</div>
+
+										{/* Description Skeleton */}
+										<div className="mb-4">
+											<div className="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse w-full mb-2" />
+											<div className="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse w-2/3" />
+										</div>
+
+										{/* Metadata Skeleton */}
+										<div className="flex items-center gap-3 mt-auto mb-4">
+											<div className="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse w-20" />
+											<div className="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse w-24" />
+										</div>
+
+										{/* Badge Skeleton */}
+										<div className="mb-4">
+											<div className="h-6 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse w-20" />
+										</div>
+
+										{/* Button Skeleton */}
+										<div className="flex gap-3">
+											<div className="flex-1 h-10 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse" />
+										</div>
+									</div>
+								</article>
+							</div>
+						))}
+					</div>
+				) : filtered.length === 0 ? (
 					<div className="animate-fade-in-up delay-200">
 						<div className="text-center py-20">
 							<div className="text-6xl mb-4">🎓</div>

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import LiquidEther from '@/components/Liquid'
-import TextPressure from '@/components/TextPressure'
+
 
 export default function Home() {
 	const { isAuthenticated } = useAuth()
@@ -50,26 +50,12 @@ export default function Home() {
 							{/* Headline */}
 							<div className="space-y-4">
 								<h1 className="text-5xl md:text-6xl font-bold leading-tight">
-									<TextPressure
-										text="Learning is fun"
-										fontFamily="Compressa VF"
-										fontUrl="https://res.cloudinary.com/dr6lvwubh/raw/upload/v1529908256/CompressaPRO-GX.woff2"
-										width={true}
-										weight={false}
-										italic={true}
-										alpha={false}
-										flex={true}
-										stroke={false}
-										scale={true}
-										textColor="#3b82f6"
-										strokeColor="#8b5cf6"
-										strokeWidth={2}
-										className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent"
-										minFontSize={20}
-									/>
+									<span className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
+										Learning is fun
+									</span>
 									<br />
 									<span className="text-slate-900 dark:text-white">
-										with <span className="text-blue-600 dark:text-blue-400">quizzes</span>
+										with QuizApp
 									</span>
 								</h1>
 								<p className="text-lg md:text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-lg">

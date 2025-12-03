@@ -162,7 +162,7 @@ export default function Profile() {
                 <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
                   <button
                     onClick={handleSignOutClick}
-                    className="w-full px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 active:scale-95"
+                    className="cursor-pointer w-full px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-200 hover:scale-105 active:scale-95"
                   >
                     Sign Out
                   </button>

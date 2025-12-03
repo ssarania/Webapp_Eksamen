@@ -13,7 +13,7 @@ namespace BasicProject.Data.Entities
         public int QuestionId { get; set; }
         public Question? Question { get; set; }
 
-        public int SelectedOptionId { get; set; }
+        public int? SelectedOptionId { get; set; } // Nullable to allow skipped questions
         public QuestionOption? SelectedOption { get; set; }
 
         public bool IsCorrect { get; set; } // Denormalized for quick access

@@ -223,7 +223,7 @@ public class QuizzesApiController : ControllerBase
             if (!quiz.IsPublic && !isOwner)
                 return Forbid();
 
-            // Don't expose correct answers unless explicitly requested (and user is owner)
+            // Don't expose correct answers unless explicitly requested
             var result = new
             {
                 quiz.Id,
@@ -239,11 +239,12 @@ public class QuizzesApiController : ControllerBase
                     q.Id,
                     q.Text,
                     q.Order,
+                    q.Explanation,
                     Options = q.Options.Select(o => new
                     {
                         o.Id,
                         o.Text,
-                        IsCorrect = (includeAnswers && isOwner) ? o.IsCorrect : (bool?)null
+                        IsCorrect = includeAnswers ? o.IsCorrect : (bool?)null
                     })
                 })
             };
@@ -376,6 +377,7 @@ public class QuizzesApiController : ControllerBase
                 var question = new Question
                 {
                     Text = qDto.Text,
+                    Explanation = qDto.Explanation,
                     Order = order++,
                     Options = qDto.Options.Select(oDto => new QuestionOption
                     {
@@ -460,6 +462,7 @@ public class QuizzesApiController : ControllerBase
                     var question = new Question
                     {
                         Text = qDto.Text,
+                        Explanation = qDto.Explanation,
                         Order = order++,
                         Options = qDto.Options.Select(oDto => new QuestionOption
                         {
@@ -496,7 +499,15 @@ public class QuizzesApiController : ControllerBase
 
         try
         {
-            var quiz = await _quizzes.GetByIdAsync(id);
+            // Load quiz with all related entities for proper cascade delete
+            var quiz = await _context.Quizzes
+                .Include(q => q.Questions)
+                    .ThenInclude(qu => qu.Options)
+                .Include(q => q.Questions)
+                    .ThenInclude(qu => qu.AttemptAnswers)
+                .Include(q => q.Attempts)
+                .FirstOrDefaultAsync(q => q.Id == id);
+                
             if (quiz == null)
                 return NotFound(new { error = $"Quiz with ID {id} not found" });
 
@@ -504,7 +515,7 @@ public class QuizzesApiController : ControllerBase
             if (quiz.AuthorId != currentUserId.Value)
                 return Forbid();
 
-            _quizzes.Remove(quiz);
+            _context.Quizzes.Remove(quiz);
             await _context.SaveChangesAsync();
             
             return NoContent();
@@ -528,6 +539,7 @@ public class CreateQuizDto
 public class CreateQuestionDto
 {
     public string Text { get; set; } = string.Empty;
+    public string? Explanation { get; set; }
     public List<CreateOptionDto> Options { get; set; } = new();
 }
 

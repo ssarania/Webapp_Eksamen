@@ -73,10 +73,12 @@ export async function handleOAuthCallback(code: string, state?: string): Promise
 	})
 }
 
-export default {
+const authService = {
 	getCurrentUser,
 	isAuthenticated,
 	logout,
 	initiateGitHubLogin,
 	handleOAuthCallback,
 }
+
+export default authService
