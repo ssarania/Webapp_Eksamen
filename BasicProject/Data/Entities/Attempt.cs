@@ -9,7 +9,7 @@ namespace BasicProject.Data.Entities
         public int QuizId { get; set; }
         public Quiz? Quiz { get; set; }
 
-        public int UserId { get; set; }
+        public long UserId { get; set; }
         public User? User { get; set; }
 
         public int Score { get; set; }

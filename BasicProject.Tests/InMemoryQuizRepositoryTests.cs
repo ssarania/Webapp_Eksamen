@@ -14,7 +14,7 @@ namespace BasicProject.Tests
         public void Create_ValidQuiz_AssignsIdAndStores()
         {
             var repo = new InMemoryQuizRepository();
-            var quiz = new Quiz { Title = "My Quiz", AuthorId = 1 };
+            var quiz = new Quiz { Title = "My Quiz", AuthorId = 1L };
 
             var created = repo.Create(quiz);
 
@@ -104,14 +104,14 @@ namespace BasicProject.Tests
         public async Task GetByAuthorAsync_ReturnsQuizzesForAuthor()
         {
             var repo = new InMemoryQuizRepository();
-            repo.Create(new Quiz { Title = "A1", AuthorId = 1 });
-            repo.Create(new Quiz { Title = "A2", AuthorId = 2 });
-            repo.Create(new Quiz { Title = "A3", AuthorId = 1 });
+            repo.Create(new Quiz { Title = "A1", AuthorId = 1L });
+            repo.Create(new Quiz { Title = "A2", AuthorId = 2L });
+            repo.Create(new Quiz { Title = "A3", AuthorId = 1L });
 
-            var results = await repo.GetByAuthorAsync(1);
+            var results = await repo.GetByAuthorAsync(1L);
 
             Assert.Equal(2, results.Count());
-            Assert.All(results, q => Assert.Equal(1, q.AuthorId));
+            Assert.All(results, q => Assert.Equal(1L, q.AuthorId));
         }
     }
 }

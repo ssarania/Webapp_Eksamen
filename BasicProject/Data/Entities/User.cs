@@ -4,7 +4,8 @@ namespace BasicProject.Data.Entities
 {
     public class User
     {
-        public int Id { get; set; }
+        // Use GitHub numeric id as the primary key
+        public long Id { get; set; }
 
         [Required]
         [StringLength(100)]

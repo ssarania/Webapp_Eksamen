@@ -13,7 +13,7 @@ namespace BasicProject.Data.Entities
         public string? Description { get; set; }
         public int QuestionCount { get; set; }
 
-        public int AuthorId { get; set; }
+        public long AuthorId { get; set; }
         public User? Author { get; set; }
 
         public bool IsPublic { get; set; } = false;

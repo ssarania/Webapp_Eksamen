@@ -9,7 +9,7 @@ namespace BasicProject.Data.Repositories
         {
         }
 
-        public async Task<IEnumerable<Quiz>> GetByAuthorAsync(int authorId)
+        public async Task<IEnumerable<Quiz>> GetByAuthorAsync(long authorId)
         {
             return await _dbSet.Where(q => q.AuthorId == authorId).ToListAsync();
         }

@@ -43,16 +43,18 @@ namespace BasicProject.Data.Repositories
             return _db.Remove(id);
         }
 
-        public Task<IEnumerable<Quiz>> GetByAuthorAsync(int authorId)
+        public Task<IEnumerable<Quiz>> GetByAuthorAsync(long authorId)
         {
             var list = _db.Values.Where(q => q.AuthorId == authorId).AsEnumerable();
             return Task.FromResult(list);
         }
 
         // Implementation of IRepository<Quiz> members
-        public Task<Quiz?> GetByIdAsync(int id)
+        public Task<Quiz?> GetByIdAsync(long id)
         {
-            return Task.FromResult(Get(id));
+            // underlying in-memory store uses int keys for quiz ids
+            var intId = (int)id;
+            return Task.FromResult(Get(intId));
         }
 
         public Task<IEnumerable<Quiz>> GetAllAsync()

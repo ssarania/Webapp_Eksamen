@@ -42,7 +42,7 @@ public class UsersApiController : ControllerBase
     /// Get user by ID
     /// </summary>
     [HttpGet("{id}")]
-    public async Task<ActionResult<User>> GetById(int id)
+    public async Task<ActionResult<User>> GetById(long id)
     {
         try
         {
@@ -87,7 +87,7 @@ public class UsersApiController : ControllerBase
     /// Update an existing user
     /// </summary>
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateUserDto dto)
+    public async Task<IActionResult> Update(long id, [FromBody] UpdateUserDto dto)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
@@ -115,7 +115,7 @@ public class UsersApiController : ControllerBase
     /// Delete a user
     /// </summary>
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(long id)
     {
         try
         {

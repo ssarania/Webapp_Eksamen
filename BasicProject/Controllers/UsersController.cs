@@ -50,7 +50,7 @@ public class UsersController : Controller
         }
     }
 
-    public async Task<IActionResult> Edit(int id)
+    public async Task<IActionResult> Edit(long id)
     {
         var user = await _users.GetByIdAsync(id);
         if (user == null) return NotFound();
@@ -59,7 +59,7 @@ public class UsersController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, [Bind("Id,Name")] User user)
+    public async Task<IActionResult> Edit(long id, [Bind("Id,Name")] User user)
     {
         if (id != user.Id) return BadRequest();
         if (!ModelState.IsValid) return View(user);
@@ -78,7 +78,7 @@ public class UsersController : Controller
         }
     }
 
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(long id)
     {
         var user = await _users.GetByIdAsync(id);
         if (user == null) return NotFound();
@@ -87,7 +87,7 @@ public class UsersController : Controller
 
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteConfirmed(int id)
+    public async Task<IActionResult> DeleteConfirmed(long id)
     {
         var user = await _users.GetByIdAsync(id);
         if (user == null) return NotFound();

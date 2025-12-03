@@ -8,6 +8,6 @@ namespace BasicProject.Data.Repositories
         Quiz? Get (int id);
         Quiz Update (Quiz quiz);
         bool Delete (int id);
-        Task<IEnumerable<Quiz>> GetByAuthorAsync(int authorId);
+        Task<IEnumerable<Quiz>> GetByAuthorAsync(long authorId);
     }
 }

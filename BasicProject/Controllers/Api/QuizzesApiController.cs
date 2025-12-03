@@ -26,15 +26,23 @@ public class QuizzesApiController : ControllerBase
     /// <summary>
     /// Get the currently authenticated user's ID from claims or Bearer token
     /// </summary>
-    private async Task<int?> GetCurrentUserIdAsync()
+        private async Task<long?> GetCurrentUserIdAsync()
     {
         // First try to get from cookie claims (for traditional cookie-based auth)
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-        if (userIdClaim != null && int.TryParse(userIdClaim.Value, out var userId))
-        {
-            _logger.LogInformation("User authenticated via cookie claims. UserId: {UserId}", userId);
-            return userId;
-        }
+            // Prefer an explicit GitHub id claim if present (added during GitHub OAuth signin)
+            var githubIdClaim = User.FindFirst("github_id");
+            if (githubIdClaim != null && long.TryParse(githubIdClaim.Value, out var githubId))
+            {
+                _logger.LogInformation("User authenticated via cookie claims. GitHubId: {GitHubId}", githubId);
+                return githubId;
+            }
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim != null && long.TryParse(userIdClaim.Value, out var userId))
+            {
+                _logger.LogInformation("User authenticated via cookie claims. UserId: {UserId}", userId);
+                return userId;
+            }
 
         // Try to get from Bearer token in Authorization header
         var authHeader = Request.Headers.Authorization.ToString();
@@ -104,16 +112,21 @@ public class QuizzesApiController : ControllerBase
         try
         {
             var currentUserId = await GetCurrentUserIdAsync();
-            
+            var usernameClaim = User.FindFirst(ClaimTypes.Name)?.Value;
+
             // Log for debugging
-            _logger.LogInformation("GetAll quizzes - CurrentUserId: {UserId}, IsAuthenticated: {IsAuth}, Claims: {Claims}", 
+            _logger.LogInformation("GetAll quizzes - CurrentUserId: {UserId}, UsernameClaim: {Username}, IsAuthenticated: {IsAuth}, Claims: {Claims}", 
                 currentUserId, 
+                usernameClaim,
                 User.Identity?.IsAuthenticated,
                 string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}")));
 
             var quizzes = await _context.Quizzes
                 .Include(q => q.Author)
-                .Where(q => q.IsPublic || (currentUserId.HasValue && q.AuthorId == currentUserId.Value))
+                .Where(q => q.IsPublic 
+                            || (currentUserId.HasValue && q.AuthorId == currentUserId.Value)
+                            || (!string.IsNullOrEmpty(usernameClaim) && q.Author != null && q.Author.UserName == usernameClaim)
+                      )
                 .Select(q => new
                 {
                     q.Id,
@@ -124,7 +137,8 @@ public class QuizzesApiController : ControllerBase
                     q.IsPublic,
                     q.CreatedAt,
                     QuestionCount = q.Questions.Count(),
-                    IsOwned = currentUserId.HasValue && q.AuthorId == currentUserId.Value
+                    IsOwned = (currentUserId.HasValue && q.AuthorId == currentUserId.Value)
+                              || (!string.IsNullOrEmpty(usernameClaim) && q.Author != null && q.Author.UserName == usernameClaim)
                 })
                 .OrderByDescending(q => q.CreatedAt)
                 .ToListAsync();
@@ -148,12 +162,14 @@ public class QuizzesApiController : ControllerBase
         try
         {
             var currentUserId = await GetCurrentUserIdAsync();
-            if (!currentUserId.HasValue)
+            var usernameClaim = User.FindFirst(ClaimTypes.Name)?.Value;
+            if (!currentUserId.HasValue && string.IsNullOrEmpty(usernameClaim))
                 return Unauthorized(new { error = "User not authenticated" });
 
             var quizzes = await _context.Quizzes
                 .Include(q => q.Author)
-                .Where(q => q.AuthorId == currentUserId.Value)
+                .Where(q => (currentUserId.HasValue && q.AuthorId == currentUserId.Value)
+                            || (!string.IsNullOrEmpty(usernameClaim) && q.Author != null && q.Author.UserName == usernameClaim))
                 .Select(q => new
                 {
                     q.Id,
@@ -187,6 +203,7 @@ public class QuizzesApiController : ControllerBase
         try
         {
             var currentUserId = await GetCurrentUserIdAsync();
+            var usernameClaim = User.FindFirst(ClaimTypes.Name)?.Value;
             var query = _context.Quizzes
                 .Include(q => q.Author)
                 .Include(q => q.Questions.OrderBy(qu => qu.Order))
@@ -199,7 +216,10 @@ public class QuizzesApiController : ControllerBase
                 return NotFound(new { error = $"Quiz with ID {id} not found" });
 
             // Authorization: allow if public or if user is the author
-            bool isOwner = currentUserId.HasValue && quiz.AuthorId == currentUserId.Value;
+            bool isOwner = (currentUserId.HasValue && quiz.AuthorId == currentUserId.Value)
+                           || (!string.IsNullOrEmpty(usernameClaim) && quiz.Author?.UserName == usernameClaim);
+			// Log for debugging
+			
             if (!quiz.IsPublic && !isOwner)
                 return Forbid();
 
@@ -271,20 +291,20 @@ public class QuizzesApiController : ControllerBase
             // include a user id claim that doesn't correspond to a local DB user yet.
             // Resolve or create a local user record and use its Id as AuthorId.
             User? dbUser = await _context.Users.FindAsync(currentUserId.Value);
+            var usernameClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+            var accessTokenClaim = User.FindFirst("access_token")?.Value;
+
             if (dbUser == null)
             {
                 // Try to resolve by username claim
-                var usernameClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
                 if (!string.IsNullOrEmpty(usernameClaim))
                 {
                     dbUser = await _context.Users.FirstOrDefaultAsync(u => u.UserName == usernameClaim);
                 }
 
-                // If still not found, create a minimal local user from available claims
+                // If still not found, create a minimal local user using the GitHub id
                 if (dbUser == null)
                 {
-                    // If we don't have a username claim to create a sensible local user,
-                    // refuse to auto-create and require a proper sign-in flow instead.
                     if (string.IsNullOrEmpty(usernameClaim))
                     {
                         _logger.LogWarning("Authenticated principal has NameIdentifier={Id} but no matching local user and no username claim. Claims: {Claims}", currentUserId.Value, User.Claims.Select(c => new { c.Type, c.Value }));
@@ -295,17 +315,47 @@ public class QuizzesApiController : ControllerBase
                     var emailClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
                     dbUser = new User
                     {
+                        // set the local user id to the GitHub numeric id
+                        Id = currentUserId.Value,
                         UserName = usernameClaim ?? $"user_{Guid.NewGuid()}",
                         Name = nameClaim ?? usernameClaim ?? string.Empty,
                         Email = emailClaim ?? string.Empty,
-                        CreatedAt = DateTime.UtcNow
+                        CreatedAt = DateTime.UtcNow,
+                        GitHubAccessToken = accessTokenClaim
                     };
                     _context.Users.Add(dbUser);
                     await _context.SaveChangesAsync();
                     _logger.LogInformation("Created local user {UserName} (Id={Id}) during quiz creation", dbUser.UserName, dbUser.Id);
                 }
+                else
+                {
+                    // Found by username; if there's a mismatch between local id and GitHub id,
+                    // ensure we have a user row that matches the GitHub id so quizzes can be authored by it.
+                    if (dbUser.Id != currentUserId.Value)
+                    {
+                        var ghUser = await _context.Users.FindAsync(currentUserId.Value);
+                        if (ghUser == null)
+                        {
+                            // Create a mapping user with the GitHub id to preserve the canonical GitHub id PK
+                            ghUser = new User
+                            {
+                                Id = currentUserId.Value,
+                                UserName = dbUser.UserName,
+                                Name = dbUser.Name,
+                                Email = dbUser.Email,
+                                CreatedAt = DateTime.UtcNow,
+                                GitHubAccessToken = accessTokenClaim
+                            };
+                            _context.Users.Add(ghUser);
+                            await _context.SaveChangesAsync();
+                            _logger.LogInformation("Created GitHub-mapped user {UserName} (Id={Id}) during quiz creation", ghUser.UserName, ghUser.Id);
+                        }
 
-                // Update currentUserId to the local DB id
+                        dbUser = ghUser;
+                    }
+                }
+
+                // Update currentUserId to the resolved local DB id (now set to GitHub id)
                 currentUserId = dbUser.Id;
             }
 

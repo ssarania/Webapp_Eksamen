@@ -104,7 +104,7 @@ public class GitHubAuthController : ControllerBase
 
             var user = new
             {
-                id = userRoot.GetProperty("id").GetInt32(),
+                id = userRoot.GetProperty("id").GetInt64(),
                 login = userRoot.GetProperty("login").GetString(),
                 name = userRoot.TryGetProperty("name", out var nameEl) ? nameEl.GetString() : null,
                 avatar_url = userRoot.GetProperty("avatar_url").GetString(),
@@ -117,10 +117,13 @@ public class GitHubAuthController : ControllerBase
             {
                 dbUser = new User
                 {
+                    // set the local user id to the GitHub numeric id
+                    Id = user.id,
                     Name = user.name ?? user.login ?? string.Empty,
                     UserName = user.login ?? string.Empty,
                     Email = user.email ?? string.Empty,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    GitHubAccessToken = accessToken
                 };
                 _context.Users.Add(dbUser);
                 await _context.SaveChangesAsync();
@@ -130,6 +133,7 @@ public class GitHubAuthController : ControllerBase
                 // Update basic profile fields
                 dbUser.Name = user.name ?? dbUser.Name;
                 dbUser.Email = user.email ?? dbUser.Email;
+                dbUser.GitHubAccessToken = accessToken;
                 _context.Users.Update(dbUser);
                 await _context.SaveChangesAsync();
             }
@@ -138,6 +142,8 @@ public class GitHubAuthController : ControllerBase
             var claims = new List<System.Security.Claims.Claim>
             {
                 new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, dbUser.Id.ToString()),
+                // include explicit GitHub id claim so APIs can prefer it when available
+                new System.Security.Claims.Claim("github_id", user.id.ToString()),
                 new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, dbUser.UserName ?? string.Empty),
             };
             if (!string.IsNullOrEmpty(dbUser.Name)) claims.Add(new System.Security.Claims.Claim("name", dbUser.Name));
