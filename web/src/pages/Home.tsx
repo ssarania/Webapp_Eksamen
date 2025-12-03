@@ -1,11 +1,32 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import LiquidEther from '@/components/Liquid'
+import TextPressure from '@/components/TextPressure'
 
 export default function Home() {
 	const { isAuthenticated } = useAuth()
 	return (
 		<div className="min-h-screen bg-gradient-to-b from-white via-blue-50/30 to-white">
 			{/* Hero Section */}
+			<div className="fixed inset-0 pointer-events-none z-0">
+				<LiquidEther
+					colors={['#5227FF', '#FF9FFC', '#B19EEF']}
+					mouseForce={20}
+					cursorSize={100}
+					isViscous={false}
+					viscous={30}
+					iterationsViscous={32}
+					iterationsPoisson={32}
+					resolution={0.5}
+					isBounce={false}
+					autoDemo={true}
+					autoSpeed={0.5}
+					autoIntensity={1.2}
+					takeoverDuration={0.25}
+					autoResumeDelay={3000}
+					autoRampDuration={0.6}
+				/>
+			</div>
 			<section className="relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-32">
 				{/* Background Gradient Blob */}
 				<div className="absolute inset-0 -z-10 overflow-hidden">
@@ -14,6 +35,7 @@ export default function Home() {
 				</div>
 
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
 					<div className="grid md:grid-cols-2 gap-12 items-center">
 						{/* Left Content */}
 						<div className="space-y-8 animate-fade-in-up">
@@ -28,16 +50,30 @@ export default function Home() {
 							{/* Headline */}
 							<div className="space-y-4">
 								<h1 className="text-5xl md:text-6xl font-bold leading-tight">
-									<span className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
-										Learning is fun
-									</span>
+									<TextPressure
+										text="Learning is fun"
+										fontFamily="Compressa VF"
+										fontUrl="https://res.cloudinary.com/dr6lvwubh/raw/upload/v1529908256/CompressaPRO-GX.woff2"
+										width={true}
+										weight={false}
+										italic={true}
+										alpha={false}
+										flex={true}
+										stroke={false}
+										scale={true}
+										textColor="#3b82f6"
+										strokeColor="#8b5cf6"
+										strokeWidth={2}
+										className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent"
+										minFontSize={20}
+									/>
 									<br />
 									<span className="text-slate-900 dark:text-white">
-										with QuizApp
+										with <span className="text-blue-600 dark:text-blue-400">quizzes</span>
 									</span>
 								</h1>
 								<p className="text-lg md:text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-lg">
-									{isAuthenticated 
+									{isAuthenticated
 										? 'Continue your learning journey. Browse quizzes, create new ones, or check your dashboard.'
 										: 'Create, share, and take engaging quizzes right from your browser. Built for students, educators, and anyone who loves learning.'}
 								</p>
@@ -73,6 +109,7 @@ export default function Home() {
 						<div className="relative hidden md:flex items-center justify-center animate-fade-in-scale">
 							<div className="relative w-full h-96">
 								{/* Floating Card 1 */}
+
 								<div className="absolute top-0 left-0 w-48 h-32 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl transform -rotate-6 animate-float opacity-90 p-6 flex flex-col justify-between">
 									<div className="w-10 h-10 bg-white/30 rounded-lg" />
 									<div className="space-y-2">
@@ -129,15 +166,15 @@ export default function Home() {
 								</div>
 
 								{/* Content */}
-							<h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">
-								Feature-rich Editor
-							</h3>
-							<p className="text-slate-600 dark:text-slate-400 leading-relaxed flex-grow">
-								Add questions and options dynamically. Choose correct answers, set difficulty levels, and preview everything before publishing.
-							</p>
+								<h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">
+									Feature-rich Editor
+								</h3>
+								<p className="text-slate-600 dark:text-slate-400 leading-relaxed flex-grow">
+									Add questions and options dynamically. Choose correct answers, set difficulty levels, and preview everything before publishing.
+								</p>
 
-							{/* Hover Arrow */}
-							<div className="mt-auto pt-6 flex items-center text-blue-600 dark:text-blue-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+								{/* Hover Arrow */}
+								<div className="mt-auto pt-6 flex items-center text-blue-600 dark:text-blue-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
 									Learn more
 									<svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -156,15 +193,15 @@ export default function Home() {
 								</div>
 
 								{/* Content */}
-							<h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">
-								Local-First
-							</h3>
-							<p className="text-slate-600 dark:text-slate-400 leading-relaxed flex-grow">
-								All quizzes and attempts are stored in your browser's localStorage. No server needed. Perfect for classrooms and demos.
-							</p>
+								<h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">
+									Local-First
+								</h3>
+								<p className="text-slate-600 dark:text-slate-400 leading-relaxed flex-grow">
+									All quizzes and attempts are stored in your browser's localStorage. No server needed. Perfect for classrooms and demos.
+								</p>
 
-							{/* Hover Arrow */}
-							<div className="mt-auto pt-6 flex items-center text-purple-600 dark:text-purple-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+								{/* Hover Arrow */}
+								<div className="mt-auto pt-6 flex items-center text-purple-600 dark:text-purple-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
 									Learn more
 									<svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -183,15 +220,15 @@ export default function Home() {
 								</div>
 
 								{/* Content */}
-							<h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">
-								Easy to Extend
-							</h3>
-							<p className="text-slate-600 dark:text-slate-400 leading-relaxed flex-grow">
-								Built with React + TypeScript. Integrate with server APIs whenever you're ready. Clean architecture ready for scale.
-							</p>
+								<h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">
+									Easy to Extend
+								</h3>
+								<p className="text-slate-600 dark:text-slate-400 leading-relaxed flex-grow">
+									Built with React + TypeScript. Integrate with server APIs whenever you're ready. Clean architecture ready for scale.
+								</p>
 
-							{/* Hover Arrow */}
-							<div className="mt-auto pt-6 flex items-center text-indigo-600 dark:text-indigo-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+								{/* Hover Arrow */}
+								<div className="mt-auto pt-6 flex items-center text-indigo-600 dark:text-indigo-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
 									Learn more
 									<svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -214,7 +251,7 @@ export default function Home() {
 						{isAuthenticated ? 'Ready to continue your learning?' : 'Ready to get started?'}
 					</h2>
 					<p className="text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
-						{isAuthenticated 
+						{isAuthenticated
 							? 'Your learning tools are ready. Start exploring quizzes or create your own.'
 							: 'Join thousands of students and educators already using QuizApp to create amazing learning experiences.'}
 					</p>
