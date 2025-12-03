@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { 
-    exchangeCodeForToken, 
-    storeToken, 
-} from '../services/githubAuthService';
+import { storeUser } from '../services/githubAuthService';
 
 export default function GitHubCallbackHandler() {
     const [searchParams] = useSearchParams();
@@ -22,21 +19,25 @@ export default function GitHubCallbackHandler() {
 
             try {
                 // Exchange code for token
-                const response = await exchangeCodeForToken(code);
-                console.log('Token exchange response:', response);
-                const { accessToken, user } = response;
+                const response = await fetch('/api/auth/github/callback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ code }),
+                });
+
+                if (!response.ok) {
+                    const detail = await response.text();
+                    throw new Error(`Failed to authenticate: ${detail}`);
+                }
+
+                const data = await response.json();
+                console.log('Authentication successful:', data);
                 
-                // Always store the token - this is crucial for API auth
-                if (accessToken) {
-                    console.log('Storing access token...');
-                    localStorage.setItem('github_access_token', accessToken);
-                    console.log('Token stored successfully');
-                    
-                    // Also store user info if available
-                    if (user) {
-                        console.log('Storing user info:', user);
-                        storeToken(accessToken, user);
-                    }
+                // Store user info for display (authentication is via secure cookie)
+                if (data.user) {
+                    console.log('Storing user info:', data.user);
+                    storeUser(data.user);
                 }
 
                 console.log('Redirecting to home...');

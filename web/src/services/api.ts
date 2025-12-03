@@ -1,16 +1,9 @@
 import type { QuizSummary, QuizDetail, CreateQuizDto } from '../types'
-import { getStoredToken } from './githubAuthService'
 
 const base = 'http://localhost:5093/api'
 
 async function fetchJson<T>(url: string, options: RequestInit = {}): Promise<T> {
 	const headers: HeadersInit = { 'Content-Type': 'application/json' }
-	
-	// Add Bearer token if available
-	const token = getStoredToken()
-	if (token) {
-		headers['Authorization'] = `Bearer ${token}`
-	}
 	
 	const res = await fetch(url, {
 		headers,

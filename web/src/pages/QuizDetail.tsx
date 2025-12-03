@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getQuizById, saveAttempt } from '../lib/storage'
 import api from '../services/api'
 import type { QuizDetail as QuizDetailType } from '../types'
 
@@ -81,22 +80,16 @@ export default function QuizDetail() {
 		}
 		let mounted = true
 
-		async function fetchQuiz() {
-			try {
-				// Try to fetch from API first
-				const q = await api.getQuizById(id as string)
-				if (mounted) setQuiz(q)
-			} catch (err) {
-				// Fallback to local storage
-				const q = getQuizById(id as string)
-				if (mounted) {
-					if (!q) setError('Quiz not found')
-					else setQuiz(q)
-				}
-			}
+	async function fetchQuiz() {
+		try {
+			// Fetch from API
+			const q = await api.getQuizById(id as string)
+			if (mounted) setQuiz(q)
+		} catch (err) {
+			// API failed - show error
+			if (mounted) setError('Failed to load quiz')
 		}
-
-		fetchQuiz()
+	}		fetchQuiz()
 		return () => { mounted = false }
 	}, [id])
 
@@ -128,8 +121,6 @@ export default function QuizDetail() {
 		})
 		setScore(correct)
 		setSubmitted(true)
-
-		saveAttempt({ quizId: quiz.id, quizTitle: quiz.title, score: correct, total: quiz.questions.length, answers: quiz.questions.map((q: any) => ({ questionId: q.id, selectedOptionId: answers[q.id] ?? null })) })
 	}
 
 	async function togglePublic() {

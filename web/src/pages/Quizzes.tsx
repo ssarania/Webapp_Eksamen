@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
-import { deleteQuiz as deleteLocalQuiz, getQuizSummaries } from '../lib/storage'
 import type { QuizSummary } from '../types'
 
 // Floating Background Elements Component
@@ -152,7 +151,7 @@ export default function Quizzes() {
 
 	useEffect(() => {
 		let mounted = true
-		api.getQuizzes().then(list => { if (mounted) setQuizzes(list) }).catch(() => setQuizzes(getQuizSummaries()))
+		api.getQuizzes().then(list => { if (mounted) setQuizzes(list) })
 		return () => { mounted = false }
 	}, [])
 
@@ -161,10 +160,9 @@ export default function Quizzes() {
 		try {
 			await api.deleteQuiz(id)
 			setQuizzes(prev => prev.filter(q => q.id !== id))
-		} catch {
-			// fallback to local delete
-			deleteLocalQuiz(id)
-			setQuizzes(prev => prev.filter(q => q.id !== id))
+		} catch (err) {
+			alert('Failed to delete quiz')
+			console.error(err)
 		}
 	}
 

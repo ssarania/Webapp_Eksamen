@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { CreateQuizDto } from '../types'
-import { createQuiz as createLocalQuiz } from '../lib/storage'
 import api from '../services/api'
 import { getStoredUser, initiateGitHubLogin } from '../services/githubAuthService'
 import type { GitHubUser } from '../services/githubAuthService'
@@ -212,14 +211,8 @@ export default function QuizCreate() {
         }
 		try {
 			setSaving(true)
-			// Try server-side create, fall back to local storage
-			try {
-				const created = await api.createQuiz(dto)
-				navigate(`/quizzes/${created.id}`)
-			} catch {
-				const created = createLocalQuiz(dto as any)
-				navigate(`/quizzes/${created.id}`)
-			}
+			const created = await api.createQuiz(dto)
+			navigate(`/quizzes/${created.id}`)
 		} catch (err: any) {
 			setError(String(err))
 		} finally { setSaving(false) }

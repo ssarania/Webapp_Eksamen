@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getStoredToken, getStoredUser } from '../services/githubAuthService'
+import { getStoredUser } from '../services/githubAuthService'
 import type { GitHubUser } from '../services/githubAuthService'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -7,9 +7,7 @@ import ProfilePictureSelector, { DEFAULT_PROFILE_PICTURES } from '../components/
 import { Modal } from '../components/Modal'
 
 export default function Profile() {
-  const [token, setToken] = useState<string | null>(null)
   const [user, setUser] = useState<GitHubUser | null>(null)
-  const [tokenVisible, setTokenVisible] = useState(false)
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false)
   const [selectedProfilePicture, setSelectedProfilePicture] = useState<string | null>(() => {
     return localStorage.getItem('selected_profile_picture')
@@ -23,7 +21,6 @@ export default function Profile() {
         const res = await fetch('/api/auth/me', { credentials: 'include' })
         if (res.ok) {
           const data = await res.json()
-          setToken(data.accessToken ?? null)
           if (data && data.login) {
             setUser({
               id: data.id,
@@ -37,7 +34,6 @@ export default function Profile() {
         }
       } catch (err) {
         // fallback to client-side storage
-        setToken(getStoredToken())
         setUser(getStoredUser())
       }
     }
@@ -241,56 +237,9 @@ export default function Profile() {
           </div>
         )}
 
-        {/* Authentication Details Section */}
-        {token && (
-          <div className="animate-fade-in-up delay-300 mb-8">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden">
-              {/* Header */}
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-700/50 dark:to-slate-700/30 px-8 py-6 border-b border-slate-100 dark:border-slate-700">
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm">
-                    🔑
-                  </div>
-                  Access Token
-                </h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Your GitHub authentication token</p>
-              </div>
-
-              {/* Content */}
-              <div className="p-8">
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Token</label>
-                    <button
-                      onClick={() => setTokenVisible(!tokenVisible)}
-                      className="text-xs px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition"
-                    >
-                      {tokenVisible ? '👁️ Hide' : '👁️ Show'}
-                    </button>
-                  </div>
-
-                  {tokenVisible ? (
-                    <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700 font-mono text-sm text-slate-600 dark:text-slate-300 break-all max-h-32 overflow-y-auto">
-                      {token}
-                    </div>
-                  ) : (
-                    <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-center">
-                      ••••••••••••••••••••••••••••••••••••••
-                    </div>
-                  )}
-                </div>
-
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  This token is used to authenticate with GitHub API. Keep it secure and never share it with others.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* User Data Section */}
         {user && (
-          <div className="animate-fade-in-up delay-400">
+          <div className="animate-fade-in-up delay-300">
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden">
               {/* Header */}
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-700/50 dark:to-slate-700/30 px-8 py-6 border-b border-slate-100 dark:border-slate-700">

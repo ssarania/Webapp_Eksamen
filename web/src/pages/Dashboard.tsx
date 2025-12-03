@@ -1,14 +1,36 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getQuizSummaries, loadAttempts } from '../lib/storage'
+import api from '../services/api'
+import type { QuizSummary } from '../types'
+
+interface Attempt {
+	id: number
+	quizId: number
+	quizTitle: string
+	score: number
+	total: number
+	timestamp: string
+}
 
 export default function Dashboard() {
-	const [quizzes, setQuizzes] = useState(() => getQuizSummaries())
-	const [attempts, setAttempts] = useState(() => loadAttempts())
+	const [quizzes, setQuizzes] = useState<QuizSummary[]>([])
+	const [attempts, setAttempts] = useState<Attempt[]>([])
+	const [loading, setLoading] = useState(true)
 
 	useEffect(() => {
-		setQuizzes(getQuizSummaries())
-		setAttempts(loadAttempts())
+		async function loadData() {
+			try {
+				const quizList = await api.getQuizzes()
+				setQuizzes(quizList)
+				// TODO: Add attempts endpoint when available
+				setAttempts([])
+			} catch (err) {
+				console.error('Failed to load dashboard data:', err)
+			} finally {
+				setLoading(false)
+			}
+		}
+		loadData()
 	}, [])
 
 	const totalQuizzes = quizzes.length
