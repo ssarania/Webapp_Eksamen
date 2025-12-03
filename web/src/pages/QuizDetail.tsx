@@ -82,8 +82,8 @@ export default function QuizDetail() {
 
 	async function fetchQuiz() {
 		try {
-			// Fetch from API
-			const q = await api.getQuizById(id as string)
+			// Fetch from API with includeAnswers=true so we can check correct answers
+			const q = await api.getQuizById(id as string, true)
 			if (mounted) setQuiz(q)
 		} catch (err) {
 			// API failed - show error
