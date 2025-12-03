@@ -3,6 +3,9 @@ using System.Text.Json;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using BasicProject.Data;
+using BasicProject.Data.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace BasicProject.Controllers;
 
@@ -12,11 +15,13 @@ public class AuthController : Controller
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _configuration;
+    private readonly AppDbContext _context;
 
-    public AuthController(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+    public AuthController(IHttpClientFactory httpClientFactory, IConfiguration configuration, AppDbContext context)
     {
         _httpClientFactory = httpClientFactory;
         _configuration = configuration;
+        _context = context;
     }
 
     // This endpoint is intended to be the GitHub OAuth callback URL (set this in the GitHub OAuth app)
@@ -92,18 +97,46 @@ public class AuthController : Controller
             using var userDoc = JsonDocument.Parse(userContent);
             var userRoot = userDoc.RootElement;
             var login = userRoot.GetProperty("login").GetString() ?? string.Empty;
-            var id = userRoot.GetProperty("id").GetInt32().ToString();
+            var githubId = userRoot.GetProperty("id").GetInt64();
             var name = userRoot.TryGetProperty("name", out var nameEl) ? nameEl.GetString() : null;
             var email = userRoot.TryGetProperty("email", out var emailEl) ? emailEl.GetString() : null;
+
+            // Upsert the user in the local database using the GitHub login as unique key
+            var dbUser = await _context.Users.FirstOrDefaultAsync(u => u.UserName == login);
+            if (dbUser == null)
+            {
+                dbUser = new User
+                {
+                    // set the local user id to the GitHub numeric id
+                    Id = githubId,
+                    Name = name ?? login,
+                    UserName = login,
+                    Email = email ?? string.Empty,
+                    CreatedAt = DateTime.UtcNow,
+                    GitHubAccessToken = accessToken
+                };
+                _context.Users.Add(dbUser);
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                // Update basic profile fields
+                dbUser.Name = name ?? dbUser.Name;
+                dbUser.Email = email ?? dbUser.Email;
+                dbUser.GitHubAccessToken = accessToken;
+                _context.Users.Update(dbUser);
+                await _context.SaveChangesAsync();
+            }
 
             // Create claims and sign in with cookie auth
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, id),
-                new Claim(ClaimTypes.Name, login),
+                new Claim(ClaimTypes.NameIdentifier, dbUser.Id.ToString()),
+                new Claim("github_id", githubId.ToString()),
+                new Claim(ClaimTypes.Name, dbUser.UserName),
             };
-            if (!string.IsNullOrEmpty(name)) claims.Add(new Claim("name", name));
-            if (!string.IsNullOrEmpty(email)) claims.Add(new Claim(ClaimTypes.Email, email));
+            if (!string.IsNullOrEmpty(dbUser.Name)) claims.Add(new Claim("name", dbUser.Name));
+            if (!string.IsNullOrEmpty(dbUser.Email)) claims.Add(new Claim(ClaimTypes.Email, dbUser.Email));
             // Optionally keep the access token as a claim (be cautious in production)
             claims.Add(new Claim("access_token", accessToken));
 
