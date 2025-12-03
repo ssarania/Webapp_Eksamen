@@ -207,7 +207,7 @@ export default function QuizCreate() {
         const dto: CreateQuizDto = {
             title: title.trim(),
             description: description.trim(),
-            isPublic: false,
+            isPublic: isPublic,
             questions: questions.map(q => ({ text: q.text, explanation: q.explanation ?? '', options: q.options.map(o => ({ text: o.text, isCorrect: !!o.isCorrect })) }))
         }
 		try {
