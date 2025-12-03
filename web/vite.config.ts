@@ -15,11 +15,13 @@ export default defineConfig({
 	// Proxy API requests to the backend during development
 	server: {
 		proxy: {
+			// Proxy all /api/* requests to the ASP.NET Core backend
 			'/api': {
 				target: 'http://localhost:5093',
 				changeOrigin: true,
 				secure: false,
 			},
+			// Proxy all /auth/* requests to the backend auth endpoints
 			'/auth': {
 				target: 'http://localhost:5093',
 				changeOrigin: true,

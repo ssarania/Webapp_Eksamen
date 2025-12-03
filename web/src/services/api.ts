@@ -1,51 +1,35 @@
 import type { QuizSummary, QuizDetail, CreateQuizDto } from '../types'
-
-const base = 'http://localhost:5093/api'
-
-async function fetchJson<T>(url: string, options: RequestInit = {}): Promise<T> {
-	const headers: HeadersInit = { 'Content-Type': 'application/json' }
-	
-	const res = await fetch(url, {
-		headers,
-		credentials: 'include',
-		...options,
-	})
-
-	if (!res.ok) {
-		const text = await res.text()
-		let body: any = text
-		try { body = JSON.parse(text) } catch { }
-		throw { status: res.status, body }
-	}
-
-	if (res.status === 204) return {} as T
-	return (await res.json()) as T
-}
+import { fetchApi } from '../lib/apiClient'
 
 export async function getQuizzes(): Promise<QuizSummary[]> {
-	return fetchJson<QuizSummary[]>(`${base}/quizzes`)
+	return fetchApi<QuizSummary[]>('/quizzes')
 }
 
-export async function getQuizById(id: string | number): Promise<QuizDetail> {
-	return fetchJson<QuizDetail>(`${base}/quizzes/${id}`)
+export async function getMyQuizzes(): Promise<QuizSummary[]> {
+	return fetchApi<QuizSummary[]>('/quizzes/my')
+}
+
+export async function getQuizById(id: string | number, includeAnswers = false): Promise<QuizDetail> {
+	const query = includeAnswers ? '?includeAnswers=true' : ''
+	return fetchApi<QuizDetail>(`/quizzes/${id}${query}`)
 }
 
 export async function createQuiz(dto: CreateQuizDto) {
-	return fetchJson<{ id: number; title: string }>(`${base}/quizzes`, {
+	return fetchApi<{ id: number; title: string }>('/quizzes', {
 		method: 'POST',
 		body: JSON.stringify(dto),
 	})
 }
 
 export async function updateQuiz(id: number, dto: Partial<CreateQuizDto>) {
-	return fetchJson<void>(`${base}/quizzes/${id}`, {
+	return fetchApi<void>(`/quizzes/${id}`, {
 		method: 'PUT',
 		body: JSON.stringify(dto),
 	})
 }
 
 export async function deleteQuiz(id: number) {
-	return fetchJson<void>(`${base}/quizzes/${id}`, { method: 'DELETE' })
+	return fetchApi<void>(`/quizzes/${id}`, { method: 'DELETE' })
 }
 
-export default { getQuizzes, getQuizById, createQuiz, updateQuiz, deleteQuiz }
+export default { getQuizzes, getMyQuizzes, getQuizById, createQuiz, updateQuiz, deleteQuiz }

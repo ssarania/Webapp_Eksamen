@@ -4,10 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllersWithViews();
-
-// Add API controllers support
+// Add API controllers support only (no MVC views)
 builder.Services.AddControllers();
 
 // Cookie authentication for server-side sessions (used by GitHub OAuth callback)
@@ -105,7 +102,6 @@ else
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
 
 app.UseRouting();
 
@@ -117,9 +113,7 @@ app.UseAuthentication();
 
 app.UseAuthorization();
 
-app.MapControllers(); // Map API controllers
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+// Map only API controllers (no MVC view routes)
+app.MapControllers();
 
 app.Run();

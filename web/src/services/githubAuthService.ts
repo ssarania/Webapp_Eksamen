@@ -1,42 +1,47 @@
-// GitHub OAuth2 Service
-// Handles the OAuth flow: authorization, token exchange, and user data fetching
+/**
+ * GitHub OAuth2 Service (LEGACY - Use authService instead)
+ * This service is deprecated. Use the centralized authService for all auth operations.
+ *
+ * Kept for backward compatibility only. All new code should use authService.ts
+ */
 
-import { githubOAuthConfig } from '../githubOAuthConfig';
+import { getGitHubAuthUrl } from '../githubOAuthConfig'
 
 export interface GitHubUser {
-    id: number;
-    login: string;
-    name: string | null;
-    avatar_url: string;
-    email: string | null;
+	id: number
+	login: string
+	name: string | null
+	avatar_url: string
+	email: string | null
 }
 
-const GITHUB_USER_KEY = 'github_user';
-
-// Get stored user info from localStorage (display purposes only)
+/**
+ * @deprecated Use authService.getCurrentUser() instead
+ */
 export const getStoredUser = (): GitHubUser | null => {
-    const user = localStorage.getItem(GITHUB_USER_KEY);
-    return user ? JSON.parse(user) : null;
-};
+	// User state is now managed by the backend; localStorage is not used
+	return null
+}
 
-// Store user info in localStorage (display purposes only)
+/**
+ * @deprecated User data is managed by the backend
+ */
 export const storeUser = (user: GitHubUser) => {
-    localStorage.setItem(GITHUB_USER_KEY, JSON.stringify(user));
-};
+	// No-op: user state is managed by the backend
+	console.warn('storeUser is deprecated. User state is managed by the backend.')
+}
 
-// Clear stored user data
+/**
+ * @deprecated User data is managed by the backend
+ */
 export const clearGitHubAuth = () => {
-    localStorage.removeItem(GITHUB_USER_KEY);
-};
+	// No-op: user state is managed by the backend
+	console.warn('clearGitHubAuth is deprecated. Use authService.logout() instead.')
+}
 
-// Initiate GitHub login
+/**
+ * @deprecated Use authService.initiateGitHubLogin() instead
+ */
 export const initiateGitHubLogin = () => {
-    const authUrl = `${githubOAuthConfig.authorizationUrl}?${new URLSearchParams({
-        client_id: githubOAuthConfig.clientId,
-        redirect_uri: githubOAuthConfig.redirectUri,
-        scope: githubOAuthConfig.scope,
-        allow_signup: 'true',
-    }).toString()}`;
-
-    window.location.href = authUrl;
-};
+	window.location.href = getGitHubAuthUrl()
+}
