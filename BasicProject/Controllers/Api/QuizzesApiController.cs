@@ -24,13 +24,74 @@ public class QuizzesApiController : ControllerBase
     }
 
     /// <summary>
-    /// Get the currently authenticated user's ID from claims
+    /// Get the currently authenticated user's ID from claims or Bearer token
     /// </summary>
-    private int? GetCurrentUserId()
+    private async Task<int?> GetCurrentUserIdAsync()
     {
+        // First try to get from cookie claims (for traditional cookie-based auth)
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userIdClaim != null && int.TryParse(userIdClaim.Value, out var userId))
+        {
+            _logger.LogInformation("User authenticated via cookie claims. UserId: {UserId}", userId);
             return userId;
+        }
+
+        // Try to get from Bearer token in Authorization header
+        var authHeader = Request.Headers.Authorization.ToString();
+        
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            var token = authHeader.Substring("Bearer ".Length).Trim();
+            _logger.LogInformation("Bearer token found, validating against GitHub API...");
+            
+            try
+            {
+                using var client = new HttpClient();
+                var userRequest = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/user");
+                userRequest.Headers.Add("Authorization", $"token {token}");
+                userRequest.Headers.Add("User-Agent", "QuizApp");
+                userRequest.Headers.Add("Accept", "application/vnd.github.v3+json");
+
+                var response = await client.SendAsync(userRequest);
+                _logger.LogInformation("GitHub API response status: {StatusCode}", response.StatusCode);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    using var doc = System.Text.Json.JsonDocument.Parse(content);
+                    var root = doc.RootElement;
+                    var githubLogin = root.GetProperty("login").GetString();
+                    _logger.LogInformation("GitHub login from token: {GitHubLogin}", githubLogin);
+
+                    // Find local user by GitHub username
+                    var localUser = await _context.Users.FirstOrDefaultAsync(u => u.UserName == githubLogin);
+                    if (localUser != null)
+                    {
+                        _logger.LogInformation("Local user found for GitHub login {GitHubLogin}. UserId: {UserId}", githubLogin, localUser.Id);
+                        return localUser.Id;
+                    }
+                    else
+                    {
+                        _logger.LogWarning("No local user found for GitHub login: {GitHubLogin}", githubLogin);
+                    }
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("GitHub API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to validate Bearer token against GitHub API");
+            }
+        }
+        else
+        {
+            _logger.LogInformation("No Bearer token in Authorization header");
+        }
+
+        _logger.LogWarning("Authentication failed - user not identified");
         return null;
     }
 
@@ -42,7 +103,13 @@ public class QuizzesApiController : ControllerBase
     {
         try
         {
-            var currentUserId = GetCurrentUserId();
+            var currentUserId = await GetCurrentUserIdAsync();
+            
+            // Log for debugging
+            _logger.LogInformation("GetAll quizzes - CurrentUserId: {UserId}, IsAuthenticated: {IsAuth}, Claims: {Claims}", 
+                currentUserId, 
+                User.Identity?.IsAuthenticated,
+                string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}")));
 
             var quizzes = await _context.Quizzes
                 .Include(q => q.Author)
@@ -80,7 +147,7 @@ public class QuizzesApiController : ControllerBase
     {
         try
         {
-            var currentUserId = GetCurrentUserId();
+            var currentUserId = await GetCurrentUserIdAsync();
             if (!currentUserId.HasValue)
                 return Unauthorized(new { error = "User not authenticated" });
 
@@ -119,7 +186,7 @@ public class QuizzesApiController : ControllerBase
     {
         try
         {
-            var currentUserId = GetCurrentUserId();
+            var currentUserId = await GetCurrentUserIdAsync();
             var query = _context.Quizzes
                 .Include(q => q.Author)
                 .Include(q => q.Questions.OrderBy(qu => qu.Order))
@@ -180,7 +247,7 @@ public class QuizzesApiController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var currentUserId = GetCurrentUserId();
+        var currentUserId = await GetCurrentUserIdAsync();
         if (!currentUserId.HasValue)
             return Unauthorized(new { error = "User not authenticated" });
 
@@ -297,7 +364,7 @@ public class QuizzesApiController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var currentUserId = GetCurrentUserId();
+        var currentUserId = await GetCurrentUserIdAsync();
         if (!currentUserId.HasValue)
             return Unauthorized(new { error = "User not authenticated" });
 
@@ -373,7 +440,7 @@ public class QuizzesApiController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var currentUserId = GetCurrentUserId();
+        var currentUserId = await GetCurrentUserIdAsync();
         if (!currentUserId.HasValue)
             return Unauthorized(new { error = "User not authenticated" });
 

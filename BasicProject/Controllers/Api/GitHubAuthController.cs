@@ -151,7 +151,7 @@ public class GitHubAuthController : ControllerBase
             return Ok(new
             {
                 accessToken = accessToken,
-                user = new { id = dbUser.Id, username = dbUser.UserName, name = dbUser.Name, email = dbUser.Email }
+                user = new { id = dbUser.Id, login = dbUser.UserName, name = dbUser.Name, avatar_url = "", email = dbUser.Email }
             });
         }
         catch (Exception ex)

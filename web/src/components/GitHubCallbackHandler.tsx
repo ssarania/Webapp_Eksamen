@@ -22,15 +22,28 @@ export default function GitHubCallbackHandler() {
 
             try {
                 // Exchange code for token
-                const { accessToken, user } = await exchangeCodeForToken(code);
+                const response = await exchangeCodeForToken(code);
+                console.log('Token exchange response:', response);
+                const { accessToken, user } = response;
                 
-                if (user) {
-                    storeToken(accessToken, user);
+                // Always store the token - this is crucial for API auth
+                if (accessToken) {
+                    console.log('Storing access token...');
+                    localStorage.setItem('github_access_token', accessToken);
+                    console.log('Token stored successfully');
+                    
+                    // Also store user info if available
+                    if (user) {
+                        console.log('Storing user info:', user);
+                        storeToken(accessToken, user);
+                    }
                 }
 
+                console.log('Redirecting to home...');
                 // Redirect to home page
                 window.location.href = '/';
             } catch (err) {
+                console.error('Authentication error:', err);
                 setError(err instanceof Error ? err.message : 'Authentication failed');
                 setLoading(false);
             }

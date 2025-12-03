@@ -190,6 +190,9 @@ namespace BasicProject.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("GitHubAccessToken")
+                        .HasColumnType("text");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
