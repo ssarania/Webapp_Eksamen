@@ -371,8 +371,8 @@ export default function Profile() {
 											setShowColorSelector(false)
 										}}
 										className={`p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${selectedColor === color.id
-												? 'border-blue-600 dark:border-blue-400 shadow-lg scale-105 bg-blue-50 dark:bg-blue-900/20'
-												: 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+											? 'border-blue-600 dark:border-blue-400 shadow-lg scale-105 bg-blue-50 dark:bg-blue-900/20'
+											: 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
 											}`}
 									>
 										<div className={`h-16 bg-gradient-to-r ${color.banner} rounded-lg mb-3`} />

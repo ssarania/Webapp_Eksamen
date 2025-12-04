@@ -116,4 +116,7 @@ app.UseAuthorization();
 // Map only API controllers (no MVC view routes)
 app.MapControllers();
 
+// Health check endpoint for Docker and monitoring
+app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));
+
 app.Run();

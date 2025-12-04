@@ -1,0 +1,59 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Docker
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Documentation
+*.md
+README.md
+ARCHITECTURE.md
+docs/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+**/bin/
+**/obj/
+**/out/
+**/dist/
+**/build/
+
+# Node modules
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Migrations (optional - uncomment if you want to run migrations in container)
+# BasicProject/Migrations/
+
+# User secrets
+**/secrets.json
+
+# Test files
+*.Tests/
+**/*.Test.csproj
+
+# Misc
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
