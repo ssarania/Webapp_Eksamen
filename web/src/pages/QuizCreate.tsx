@@ -15,7 +15,7 @@ function IconTrash() {
     )
 }
 
-function OptionRow({ option, qi, oi, onText, onSetCorrect, onRemove, disableRemove }: {
+function OptionRow({ option, qi, oi, onText, onSetCorrect, onRemove, disableRemove, hasError, errorMessage }: {
     option: Option
     qi: number
     oi: number
@@ -23,37 +23,52 @@ function OptionRow({ option, qi, oi, onText, onSetCorrect, onRemove, disableRemo
     onSetCorrect: () => void
     onRemove: () => void
     disableRemove: boolean
+    hasError?: boolean
+    errorMessage?: string
 }) {
     return (
-        <div className="flex items-center gap-3 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
-            <input
-                type="radio"
-                name={`correct-${qi}`}
-                checked={!!option.isCorrect}
-                onChange={onSetCorrect}
-                className="cursor-pointer w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-200"
-                aria-label={`Select correct option ${oi + 1}`}
-            />
-            <input
-                value={option.text}
-                onChange={e => onText(e.target.value)}
-                placeholder={`Option ${oi + 1}`}
-                className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 transition"
-            />
-            <button
-                type="button"
-                onClick={onRemove}
-                disabled={disableRemove}
-                className="cursor-pointer p-2 rounded-md text-red-600 hover:bg-red-50 disabled:opacity-40"
-                aria-label="Remove option"
-            >
-                <IconTrash />
-            </button>
+        <div>
+            <div className={`flex items-center gap-3 rounded-lg px-3 py-2 transition ${
+                hasError 
+                    ? 'bg-red-50 dark:bg-red-900/20 border-2 border-red-400' 
+                    : 'bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-700'
+            }`}>
+                <input
+                    type="radio"
+                    name={`correct-${qi}`}
+                    checked={!!option.isCorrect}
+                    onChange={onSetCorrect}
+                    className="cursor-pointer w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-200"
+                    aria-label={`Select correct option ${oi + 1}`}
+                />
+                <input
+                    value={option.text}
+                    onChange={e => onText(e.target.value)}
+                    placeholder={`Option ${oi + 1}`}
+                    className={`flex-1 bg-white dark:bg-slate-900 border rounded-md px-3 py-2 focus:outline-none focus:ring-2 transition text-sm ${
+                        hasError
+                            ? 'border-red-300 dark:border-red-600 focus:ring-red-200'
+                            : 'border-slate-200 dark:border-slate-700 focus:ring-blue-200'
+                    }`}
+                />
+                <button
+                    type="button"
+                    onClick={onRemove}
+                    disabled={disableRemove}
+                    className="cursor-pointer p-2 rounded-md text-red-600 hover:bg-red-50 disabled:opacity-40"
+                    aria-label="Remove option"
+                >
+                    <IconTrash />
+                </button>
+            </div>
+            {errorMessage && (
+                <p className="mt-1 text-xs text-red-600">{errorMessage}</p>
+            )}
         </div>
     )
 }
 
-function QuestionCard({ q, qi, onUpdateText, onAddOption, onUpdateOption, onSetCorrect, onRemoveQuestion, onRemoveOption, onUpdateExplanation }: {
+function QuestionCard({ q, qi, onUpdateText, onAddOption, onUpdateOption, onSetCorrect, onRemoveQuestion, onRemoveOption, onUpdateExplanation, validationErrors }: {
     q: Q
     qi: number
     onUpdateText: (text: string) => void
@@ -63,9 +78,16 @@ function QuestionCard({ q, qi, onUpdateText, onAddOption, onUpdateOption, onSetC
     onRemoveQuestion: () => void
     onRemoveOption: (oi: number) => void
     onUpdateExplanation: (text: string) => void
+    validationErrors: string[]
 }) {
+    // Find all errors for this question
+    const questionErrors = validationErrors.filter(err => err.startsWith(`Question ${qi + 1}:`))
+    const isThisQuestionInError = questionErrors.length > 0
+
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-md p-6 space-y-4 transform transition hover:shadow-xl">
+        <div className={`bg-white dark:bg-slate-800 rounded-2xl shadow-md p-6 space-y-4 transform transition hover:shadow-xl ${
+            isThisQuestionInError ? 'ring-2 ring-red-400' : ''
+        }`}>
             <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Question {qi + 1}</label>
@@ -73,8 +95,15 @@ function QuestionCard({ q, qi, onUpdateText, onAddOption, onUpdateOption, onSetC
                         value={q.text}
                         onChange={e => onUpdateText(e.target.value)}
                         placeholder="Enter your question"
-                        className="mt-1 w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm transition"
+                        className={`mt-1 w-full border rounded-lg px-3 py-3 focus:outline-none focus:ring-2 text-sm transition ${
+                            validationErrors.some(e => e.startsWith(`Question ${qi + 1}: Enter question text`))
+                                ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20 focus:ring-red-200'
+                                : 'border-slate-200 dark:border-slate-700 focus:ring-blue-200'
+                        }`}
                     />
+                    {validationErrors.find(e => e.startsWith(`Question ${qi + 1}: Enter question text`)) && (
+                        <p className="mt-1 text-xs text-red-600">Enter question text</p>
+                    )}
                 </div>
                 <div className="ml-2 flex-shrink-0">
                     <button type="button" onClick={onRemoveQuestion} className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md text-sm hover:shadow transition">
@@ -84,18 +113,26 @@ function QuestionCard({ q, qi, onUpdateText, onAddOption, onUpdateOption, onSetC
             </div>
 
             <div className="space-y-3">
-                {q.options.map((o, oi) => (
-                    <OptionRow
-                        key={oi}
-                        option={o}
-                        qi={qi}
-                        oi={oi}
-                        onText={text => onUpdateOption(oi, text)}
-                        onSetCorrect={() => onSetCorrect(oi)}
-                        onRemove={() => onRemoveOption(oi)}
-                        disableRemove={q.options.length <= 2}
-                    />
-                ))}
+                {q.options.map((o, oi) => {
+                    // Check if this option has an error
+                    const optionError = questionErrors.find(err => err.endsWith(`Option ${oi + 1}`))
+                    // Extract just the "Fill in Option X" part
+                    const errorMessage = optionError?.split(': ')[1]
+                    return (
+                        <OptionRow
+                            key={oi}
+                            option={o}
+                            qi={qi}
+                            oi={oi}
+                            onText={text => onUpdateOption(oi, text)}
+                            onSetCorrect={() => onSetCorrect(oi)}
+                            onRemove={() => onRemoveOption(oi)}
+                            disableRemove={q.options.length <= 2}
+                            hasError={!!optionError}
+                            errorMessage={errorMessage}
+                        />
+                    )
+                })}
             </div>
 
             <div className="flex items-center justify-between">
@@ -132,7 +169,7 @@ export default function QuizCreate() {
     const [questions, setQuestions] = useState<Q[]>([
         { text: '', options: [{ text: '', isCorrect: true }, { text: '' }], explanation: '' }
     ])
-    const [error, setError] = useState<string | null>(null)
+    const [errors, setErrors] = useState<string[]>([])
     const [saving, setSaving] = useState(false)
     const [checkingAuth, setCheckingAuth] = useState(true)
     const navigate = useNavigate()
@@ -155,6 +192,7 @@ export default function QuizCreate() {
     }
 
     function addOption(qi: number) {
+        setErrors([])
         setQuestions(s => s.map((q, i) => i === qi ? { ...q, options: [...q.options, { text: '' }] } : q))
     }
 
@@ -163,27 +201,30 @@ export default function QuizCreate() {
     }
 
     function updateOption(qi: number, oi: number, text: string) {
+        setErrors([])
         setQuestions(s => s.map((q, i) => i === qi ? { ...q, options: q.options.map((o, j) => j === oi ? { ...o, text } : o) } : q))
     }
 
     function removeOption(qi: number, oi: number) {
+        setErrors([])
         setQuestions(s => s.map((q, i) => i === qi ? { ...q, options: q.options.filter((_, j) => j !== oi) } : q))
     }
 
     async function onSubmit(e: React.FormEvent) {
         e.preventDefault()
-        setError(null)
-        if (!title.trim()) return setError('Please enter a quiz title')
-        if (!questions.length) return setError('Add at least one question')
+        const newErrors: string[] = []
+        if (!title.trim()) newErrors.push('Title: Please enter a quiz title')
+        if (!questions.length) return setErrors(['Add at least one question'])
         for (let qi = 0; qi < questions.length; qi++) {
             const q = questions[qi]
-            if (!q.text.trim()) return setError('All questions must have text')
-            if (!q.options || q.options.length < 2) return setError('Each question needs at least two options')
+            if (!q.text.trim()) newErrors.push(`Question ${qi + 1}: Enter question text`)
+            if (!q.options || q.options.length < 2) return setErrors(['Each question needs at least two options'])
             for (let oi = 0; oi < q.options.length; oi++) {
-                if (!q.options[oi].text.trim()) return setError(`Question ${qi + 1}: Fill in Option ${oi + 1}`)
+                if (!q.options[oi].text.trim()) newErrors.push(`Question ${qi + 1}: Fill in Option ${oi + 1}`)
             }
-            if (q.options.filter(x => x.isCorrect).length !== 1) return setError('Each question must have exactly one correct option')
+            if (q.options.filter(x => x.isCorrect).length !== 1) return setErrors(['Each question must have exactly one correct option'])
         }
+        if (newErrors.length > 0) return setErrors(newErrors)
 
         const dto: CreateQuizDto = {
             title: title.trim(),
@@ -196,7 +237,7 @@ export default function QuizCreate() {
 			const created = await quizService.createQuiz(dto)
 			navigate(`/quizzes/${created.id}`)
 		} catch (err: any) {
-			setError(String(err))
+			setErrors([String(err)])
 		} finally { setSaving(false) }
 	}
 
@@ -217,10 +258,17 @@ export default function QuizCreate() {
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Title</label>
                                         <input
-                                            className="mt-1 w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-200 text-sm"
+                                            className={`mt-1 w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 text-sm transition ${
+                                                errors.some(e => e.startsWith('Title:'))
+                                                    ? 'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20 focus:ring-red-200'
+                                                    : 'border-slate-200 dark:border-slate-700 focus:ring-blue-200'
+                                            }`}
                                             value={title}
                                             onChange={e => setTitle(e.target.value)}
                                         />
+                                        {errors.find(e => e.startsWith('Title:')) && (
+                                            <p className="mt-1 text-xs text-red-600">Please enter a quiz title</p>
+                                        )}
                                     </div>
 
                                     <div>
@@ -272,6 +320,7 @@ export default function QuizCreate() {
                                                 onRemoveQuestion={() => removeQuestion(qi)}
                                                 onRemoveOption={(oi) => removeOption(qi, oi)}
                                                 onUpdateExplanation={(text) => updateQuestion(qi, { explanation: text })}
+                                                validationErrors={errors}
                                             />
                                         </div>
                                     ))}
@@ -302,7 +351,9 @@ export default function QuizCreate() {
                                     )}
                             </div>
 
-                            {error && <div className="text-red-600">{error}</div>}
+                            {errors.length > 0 && !errors[0].includes('Question') && (
+                                <div className="text-red-600">{errors[0]}</div>
+                            )}
                         </form>
                     </div>
                 </div>
