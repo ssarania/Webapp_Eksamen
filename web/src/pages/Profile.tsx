@@ -13,6 +13,9 @@ const COLOR_PRESETS = [
 	{ id: 'orange-red', label: 'Orange to Red', banner: 'from-orange-600 to-red-600', frame: 'from-orange-600 to-red-600' },
 	{ id: 'indigo-blue', label: 'Indigo to Blue', banner: 'from-indigo-600 to-blue-600', frame: 'from-indigo-600 to-blue-600' },
 	{ id: 'pink-rose', label: 'Pink to Rose', banner: 'from-pink-600 to-rose-600', frame: 'from-pink-600 to-rose-600' },
+	{ id: 'amber-orange', label: 'Amber to Orange', banner: 'from-amber-500 to-orange-600', frame: 'from-amber-500 to-orange-600' },
+	{ id: 'emerald-teal', label: 'Emerald to Teal', banner: 'from-emerald-600 to-teal-500', frame: 'from-emerald-600 to-teal-500' },
+	{ id: 'violet-purple', label: 'Violet to Purple', banner: 'from-violet-600 to-purple-600', frame: 'from-violet-600 to-purple-600' },
 ]
 
 export default function Profile() {
