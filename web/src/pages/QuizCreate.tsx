@@ -175,9 +175,13 @@ export default function QuizCreate() {
         setError(null)
         if (!title.trim()) return setError('Please enter a quiz title')
         if (!questions.length) return setError('Add at least one question')
-        for (const q of questions) {
+        for (let qi = 0; qi < questions.length; qi++) {
+            const q = questions[qi]
             if (!q.text.trim()) return setError('All questions must have text')
             if (!q.options || q.options.length < 2) return setError('Each question needs at least two options')
+            for (let oi = 0; oi < q.options.length; oi++) {
+                if (!q.options[oi].text.trim()) return setError(`Question ${qi + 1}: Fill in Option ${oi + 1}`)
+            }
             if (q.options.filter(x => x.isCorrect).length !== 1) return setError('Each question must have exactly one correct option')
         }
 
