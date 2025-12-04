@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { initiateGitHubLogin } from '../services/githubAuthService';
 import { useAuth } from '../context/AuthContext';
 import { Modal } from './Modal';
+import { getGradientForUser } from './ProfilePictureSelector';
 
 const DEFAULT_PROFILE_PICTURES = [
   { id: 'scholar', emoji: '🎓' },
@@ -24,7 +25,8 @@ export default function GitHubAuthButton({ className }: { className?: string }) 
     const navigate = useNavigate();
     const [showConfirm, setShowConfirm] = useState(false);
     const [selectedProfilePicture, setSelectedProfilePicture] = useState<string | null>(() => {
-        return localStorage.getItem('selected_profile_picture')
+        const stored = localStorage.getItem('selected_profile_picture')
+        return stored && stored !== '' ? stored : null
     })
     const [selectedColor, setSelectedColor] = useState<string>(() => {
         return localStorage.getItem('profile_color') || 'blue-purple'
@@ -91,8 +93,38 @@ export default function GitHubAuthButton({ className }: { className?: string }) 
     const getProfilePictureEmoji = () => {
         if (selectedProfilePicture) {
             const picture = DEFAULT_PROFILE_PICTURES.find(p => p.id === selectedProfilePicture)
-            return picture?.emoji || '👤'
+            return picture?.emoji || null
         }
+        return null
+    }
+
+    const renderAvatar = (size: 'small' | 'medium' = 'small') => {
+        const emoji = getProfilePictureEmoji()
+        const sizeClasses = size === 'small' ? 'w-8 h-8 text-sm' : 'w-10 h-10 text-xl'
+        
+        if (emoji) {
+            // Custom emoji avatar
+            return (
+                <div key={`header-avatar-${selectedColor}`} className={`${sizeClasses} rounded-full bg-gradient-to-br ${getColorClasses()} flex items-center justify-center transition-all duration-300`}>
+                    {emoji}
+                </div>
+            )
+        } else if (user) {
+            // Gradient with first letter
+            const displayName = user.name || user.login
+            const firstLetter = displayName.charAt(0).toUpperCase()
+            const gradient = getGradientForUser(displayName)
+            
+            return (
+                <div 
+                    className={`${sizeClasses} rounded-full flex items-center justify-center font-bold text-white transition-all duration-300`}
+                    style={{ background: gradient }}
+                >
+                    {firstLetter}
+                </div>
+            )
+        }
+        
         return null
     }
 
@@ -140,17 +172,7 @@ export default function GitHubAuthButton({ className }: { className?: string }) 
                     {user ? (
                         <div className="flex items-center gap-3">
                             <Link to="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                                {selectedProfilePicture ? (
-                                    <div key={`header-avatar-${selectedColor}`} className={`w-8 h-8 rounded-full bg-gradient-to-br ${getColorClasses()} flex items-center justify-center text-sm transition-all duration-300`}>
-                                        {getProfilePictureEmoji()}
-                                    </div>
-                                ) : (
-                                    <img
-                                        src={user.avatar_url}
-                                        alt={user.login}
-                                        className="w-8 h-8 rounded-full"
-                                    />
-                                )}
+                                {renderAvatar('small')}
                                 <div className="text-sm">
                                     <div className="font-medium">{user.login}</div>
                                 </div>
@@ -180,17 +202,7 @@ export default function GitHubAuthButton({ className }: { className?: string }) 
                 {user ? (
                     <div>
                         <Link to="/profile" className="inline-flex items-center gap-2.5 no-underline text-inherit cursor-pointer">
-                            {selectedProfilePicture ? (
-                                <div key={`header-avatar-inline-${selectedColor}`} className={`inline-flex w-10 h-10 rounded-full bg-gradient-to-br ${getColorClasses()} items-center justify-center text-xl transition-all duration-300`}>
-                                    {getProfilePictureEmoji()}
-                                </div>
-                            ) : (
-                                <img
-                                    src={user.avatar_url}
-                                    alt={user.login}
-                                    className="w-10 h-10 rounded-full"
-                                />
-                            )}
+                            {renderAvatar('medium')}
                             <span>Signed in as <b>{user.login}</b></span>
                             {user.name && <span> ({user.name})</span>}
                         </Link>

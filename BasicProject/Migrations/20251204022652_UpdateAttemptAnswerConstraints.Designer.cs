@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BasicProject.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251203220015_UpdateAttemptAnswerConstraints")]
+    [Migration("20251204022652_UpdateAttemptAnswerConstraints")]
     partial class UpdateAttemptAnswerConstraints
     {
         /// <inheritdoc />
