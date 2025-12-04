@@ -3,8 +3,6 @@
  * Get these values from https://github.com/settings/developers -> OAuth Apps
  */
 
-import { AUTH_BASE } from './config/api'
-
 export const githubOAuthConfig = {
 	clientId: 'Ov23li6GxfGz0TAJZgrv', // GitHub OAuth App Client ID
 	// Redirect to backend's callback endpoint which handles the OAuth exchange

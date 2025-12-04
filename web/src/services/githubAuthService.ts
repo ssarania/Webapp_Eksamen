@@ -26,7 +26,7 @@ export const getStoredUser = (): GitHubUser | null => {
 /**
  * @deprecated User data is managed by the backend
  */
-export const storeUser = (user: GitHubUser) => {
+export const storeUser = (_user: GitHubUser) => {
 	// No-op: user state is managed by the backend
 	console.warn('storeUser is deprecated. User state is managed by the backend.')
 }

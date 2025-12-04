@@ -84,7 +84,7 @@ export function createQuiz(dto: CreateQuizDto): QuizDetail {
 		const opts = qq.options.map((o, oi) => ({ id: oi + 1, text: o.text, isCorrect: !!o.isCorrect }))
 		return { id: qNext++, text: qq.text, order: 0, options: opts, explanation: qq.explanation ?? '' }
 	})
-	const created: QuizDetail = { id: nextId, title: dto.title, description: dto.description ?? '', authorId: dto.authorId, authorName: undefined, createdAt: nowIso(), questions }
+	const created: QuizDetail = { id: nextId, title: dto.title, description: dto.description ?? '', authorId: 0, authorName: undefined, createdAt: nowIso(), questions }
 	quizzes.push(created)
 	saveQuizzes(quizzes)
 	return created
