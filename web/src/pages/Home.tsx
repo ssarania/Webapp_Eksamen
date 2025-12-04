@@ -77,7 +77,7 @@ export default function Home() {
 									</svg>
 								</Link>
 
-								{isAuthenticated && (
+								{isAuthenticated ? (
 									<Link
 										to="/quiz-creation/create"
 										className="group inline-flex items-center justify-center px-8 py-4 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold rounded-lg border-2 border-slate-200 dark:border-slate-700 hover:border-blue-600 dark:hover:border-blue-500 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95"
@@ -85,6 +85,16 @@ export default function Home() {
 										<span>Create Quiz</span>
 										<svg className="w-5 h-5 ml-2 group-hover:rotate-90 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+										</svg>
+									</Link>
+								) : (
+									<Link
+										to="/auth/login"
+										className="group inline-flex items-center justify-center px-8 py-4 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold rounded-lg border-2 border-slate-200 dark:border-slate-700 hover:border-purple-600 dark:hover:border-purple-500 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95"
+									>
+										<span>Start Creating Quizzes</span>
+										<svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
 										</svg>
 									</Link>
 								)}
