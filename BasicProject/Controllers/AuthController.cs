@@ -162,7 +162,7 @@ public class AuthController : Controller
     }
 
     [HttpPost("signout")]
-    public async Task<IActionResult> SignOut()
+    public new async Task<IActionResult> SignOut()
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return Ok(new { signedOut = true });
