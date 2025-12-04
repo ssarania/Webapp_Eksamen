@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { initiateGitHubLogin } from '../services/githubAuthService'
 import LiquidEther from '@/components/Liquid'
 
 
@@ -88,15 +89,15 @@ export default function Home() {
 										</svg>
 									</Link>
 								) : (
-									<Link
-										to="/auth/login"
-										className="group inline-flex items-center justify-center px-8 py-4 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold rounded-lg border-2 border-slate-200 dark:border-slate-700 hover:border-purple-600 dark:hover:border-purple-500 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95"
+									<button
+										onClick={initiateGitHubLogin}
+										className="group inline-flex items-center justify-center px-8 py-4 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-semibold rounded-lg border-2 border-slate-200 dark:border-slate-700 hover:border-purple-600 dark:hover:border-purple-500 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
 									>
 										<span>Start Creating Quizzes</span>
 										<svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
 										</svg>
-									</Link>
+									</button>
 								)}
 							</div>
 						</div>
