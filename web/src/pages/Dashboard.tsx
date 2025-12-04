@@ -18,9 +18,7 @@ export default function Dashboard() {
 	const { user } = useAuth()
 	const [quizzes, setQuizzes] = useState<QuizSummary[]>([])
 	const [attempts, setAttempts] = useState<Attempt[]>([])
-	const [quizzesPage, setQuizzesPage] = useState(1)
 	const [deletingQuizId, setDeletingQuizId] = useState<number | null>(null)
-	const quizzesPerPage = 6
 	
 
 	useEffect(() => {
@@ -67,12 +65,6 @@ export default function Dashboard() {
 			setDeletingQuizId(quizId)
 			await quizService.deleteQuiz(quizId)
 			setQuizzes(quizzes.filter(q => q.id !== quizId))
-			// Reset to first page if we're beyond the new total
-			const newTotal = quizzes.length - 1
-			const newTotalPages = Math.ceil(newTotal / quizzesPerPage)
-			if (quizzesPage > newTotalPages) {
-				setQuizzesPage(Math.max(1, newTotalPages))
-			}
 		} catch (err) {
 			console.error('Failed to delete quiz:', err)
 			alert('Failed to delete quiz. Please try again.')
@@ -83,13 +75,9 @@ export default function Dashboard() {
 
 	const totalQuizzes = quizzes.length
 	const totalAttempts = attempts.length
-	const recent = attempts.slice(0, 5)
-	
-	// Pagination for quizzes
-	const totalPages = Math.ceil(quizzes.length / quizzesPerPage)
-	const startIndex = (quizzesPage - 1) * quizzesPerPage
-	const endIndex = startIndex + quizzesPerPage
-	const paginatedQuizzes = quizzes.slice(startIndex, endIndex)
+	const recent = attempts.slice(0, 15)
+	const displayedQuizzes = quizzes.slice(0, 15)
+	const initialQuizzes = quizzes.slice(0, 4)
 
 	return (
 		<div className="min-h-screen bg-gradient-to-b from-white via-blue-50/30 to-white py-12 relative overflow-hidden">
@@ -202,45 +190,49 @@ export default function Dashboard() {
 										<p className="text-sm text-slate-400 dark:text-slate-500 mt-1">Take a quiz to get started!</p>
 									</div>
 								) : (
-									<ul className="space-y-3">
-										{recent.map((a, idx) => (
-											<li key={a.id} className="group/item animate-fade-in-up" style={{ animationDelay: `${100 + idx * 50}ms` }}>
-												<div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 transition-all duration-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:shadow-md hover:translate-x-1 border border-slate-100 dark:border-slate-600">
-													<div className="flex items-start justify-between">
-														<div className="flex-1">
-															<p className="font-semibold text-slate-900 dark:text-white group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400 transition-colors">
-																{a.quizTitle}
-															</p>
-															<p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-																{new Date(a.timestamp).toLocaleString()}
-															</p>
-														</div>
-														<div className="text-right">
-															<div className="flex items-center gap-2">
-																<div className="text-right">
-																	<p className="font-bold text-slate-900 dark:text-white">
-																		{a.score}/{a.total}
+									<>
+										<div className="max-h-80 overflow-y-auto pr-2">
+											<ul className="space-y-3">
+												{recent.map((a, idx) => (
+													<li key={a.id} className="group/item animate-fade-in-up" style={{ animationDelay: `${100 + idx * 50}ms` }}>
+														<div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 transition-all duration-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:shadow-md hover:translate-x-1 border border-slate-100 dark:border-slate-600">
+															<div className="flex items-start justify-between">
+																<div className="flex-1">
+																	<p className="font-semibold text-slate-900 dark:text-white group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400 transition-colors">
+																		{a.quizTitle}
 																	</p>
-																	<p className="text-xs text-slate-500 dark:text-slate-400">
-																		{Math.round((a.score / a.total) * 100)}%
+																	<p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+																		{new Date(a.timestamp).toLocaleString()}
 																	</p>
 																</div>
-																<div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm ${
-																	a.score === a.total
-																		? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-																		: a.score >= a.total * 0.7
-																		? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-																		: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-																}`}>
-																	{a.score === a.total ? '✓' : `${Math.round((a.score / a.total) * 100)}%`}
+																<div className="text-right">
+																	<div className="flex items-center gap-2">
+																		<div className="text-right">
+																			<p className="font-bold text-slate-900 dark:text-white">
+																				{a.score}/{a.total}
+																			</p>
+																			<p className="text-xs text-slate-500 dark:text-slate-400">
+																				{Math.round((a.score / a.total) * 100)}%
+																			</p>
+																		</div>
+																		<div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm ${
+																			a.score === a.total
+																				? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+																				: a.score >= a.total * 0.7
+																				? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+																				: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+																		}`}>
+																			{a.score === a.total ? '✓' : `${Math.round((a.score / a.total) * 100)}%`}
+																		</div>
+																	</div>
 																</div>
 															</div>
 														</div>
-													</div>
-												</div>
-											</li>
-										))}
-									</ul>
+													</li>
+												))}
+											</ul>
+										</div>
+									</>
 								)}
 							</div>
 						</div>
@@ -267,9 +259,9 @@ export default function Dashboard() {
 										<p className="text-sm text-slate-400 dark:text-slate-500 mt-1">Create your first quiz to get started!</p>
 									</div>
 								) : (
-									<>
+									<div className="max-h-80 overflow-y-auto pr-2">
 										<ul className="space-y-3">
-											{paginatedQuizzes.map((q, idx) => (
+											{displayedQuizzes.map((q, idx) => (
 												<li key={q.id} className="group/item animate-fade-in-up" style={{ animationDelay: `${100 + idx * 50}ms` }}>
 													<div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 transition-all duration-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:shadow-md hover:translate-x-1 border border-slate-100 dark:border-slate-600">
 														<div className="flex items-start justify-between">
@@ -313,44 +305,7 @@ export default function Dashboard() {
 												</li>
 											))}
 										</ul>
-
-										{/* Pagination Controls */}
-										{totalPages > 1 && (
-											<div className="mt-6 flex items-center justify-center gap-2">
-												<button
-													onClick={() => setQuizzesPage(Math.max(1, quizzesPage - 1))}
-													disabled={quizzesPage === 1}
-													className="px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-600"
-												>
-													← Previous
-												</button>
-												
-												<div className="flex gap-1">
-													{Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-														<button
-															key={page}
-															onClick={() => setQuizzesPage(page)}
-															className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${
-																quizzesPage === page
-																	? 'bg-blue-600 text-white'
-																	: 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-600'
-															}`}
-														>
-															{page}
-														</button>
-													))}
-												</div>
-
-												<button
-													onClick={() => setQuizzesPage(Math.min(totalPages, quizzesPage + 1))}
-													disabled={quizzesPage === totalPages}
-													className="px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-600"
-												>
-													Next →
-												</button>
-											</div>
-										)}
-									</>
+									</div>
 								)}
 							</div>
 						</div>
