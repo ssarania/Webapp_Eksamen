@@ -49,16 +49,16 @@ export default function Home() {
 
 							{/* Headline */}
 							<div className="space-y-4">
-								<h1 className="text-5xl md:text-6xl font-bold leading-tight">
-									<span className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
+								<h1 className="text-5xl md:text-6xl font-bold leading-tight drop-shadow-lg">
+									<span className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent drop-shadow-lg">
 										Learning is fun
 									</span>
 									<br />
-									<span className="text-slate-900 dark:text-white">
+									<span className="text-slate-900 dark:text-white drop-shadow-lg">
 										with QuizApp
 									</span>
 								</h1>
-								<p className="text-lg md:text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-lg">
+								<p className="text-lg md:text-xl text-slate-700 dark:text-slate-200 leading-relaxed max-w-lg font-medium drop-shadow-md">
 									{isAuthenticated
 										? 'Continue your learning journey. Browse quizzes, create new ones, or check your dashboard.'
 										: 'Create, share, and take engaging quizzes right from your browser. Built for students, educators, and anyone who loves learning.'}
@@ -132,10 +132,10 @@ export default function Home() {
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					{/* Section Header */}
 					<div className="text-center mb-16 space-y-4 animate-fade-in">
-						<h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white">
+						<h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white drop-shadow-lg">
 							Why choose QuizApp?
 						</h2>
-						<p className="text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
+						<p className="text-lg text-slate-700 dark:text-slate-200 max-w-2xl mx-auto font-medium drop-shadow-md">
 							Packed with powerful features designed to make learning and teaching engaging and effortless.
 						</p>
 					</div>
@@ -151,11 +151,11 @@ export default function Home() {
 									✏️
 								</div>
 
-								{/* Content */}
-								<h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">
-									Feature-rich Editor
-								</h3>
-								<p className="text-slate-600 dark:text-slate-400 leading-relaxed flex-grow">
+							{/* Content */}
+							<h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3 drop-shadow-md">
+								Feature-rich Editor
+							</h3>
+							<p className="text-slate-700 dark:text-slate-300 leading-relaxed flex-grow font-medium drop-shadow-sm">
 									Add questions and options dynamically. Choose correct answers, add questions and preview everything before publishing.
 								</p>
 
@@ -179,10 +179,10 @@ export default function Home() {
 								</div>
 
 								{/* Content */}
-								<h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">
+								<h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3 drop-shadow-md">
 									Local-First
 								</h3>
-								<p className="text-slate-600 dark:text-slate-400 leading-relaxed flex-grow">
+								<p className="text-slate-700 dark:text-slate-300 leading-relaxed flex-grow font-medium drop-shadow-sm">
 									All quizzes and attempts are stored in your browser's localStorage under "My Quizzes". No server needed. Perfect for classrooms, students and demos.
 								</p>
 
@@ -206,10 +206,10 @@ export default function Home() {
 								</div>
 
 								{/* Content */}
-								<h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">
+								<h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3 drop-shadow-md">
 									Easy to Extend
 								</h3>
-								<p className="text-slate-600 dark:text-slate-400 leading-relaxed flex-grow">
+								<p className="text-slate-700 dark:text-slate-300 leading-relaxed flex-grow font-medium drop-shadow-sm">
 									Built with React + TypeScript and ASP.NET Core 8. Clean architecture ready for scale.
 								</p>
 
@@ -233,10 +233,10 @@ export default function Home() {
 				</div>
 
 				<div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8 animate-fade-in">
-					<h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white">
+					<h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white drop-shadow-lg">
 						{isAuthenticated ? 'Ready to continue your learning?' : 'Ready to get started?'}
 					</h2>
-					<p className="text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
+					<p className="text-xl text-slate-700 dark:text-slate-200 max-w-2xl mx-auto font-medium drop-shadow-md">
 						{isAuthenticated
 							? 'Your learning tools are ready. Start exploring quizzes or create your own.'
 							: 'Join thousands of students and educators already using QuizApp to create amazing learning experiences.'}

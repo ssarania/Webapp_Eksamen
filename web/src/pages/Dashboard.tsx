@@ -77,7 +77,6 @@ export default function Dashboard() {
 	const totalAttempts = attempts.length
 	const recent = attempts.slice(0, 15)
 	const displayedQuizzes = quizzes.slice(0, 15)
-	const initialQuizzes = quizzes.slice(0, 4)
 
 	return (
 		<div className="min-h-screen bg-gradient-to-b from-white via-blue-50/30 to-white py-12 relative overflow-hidden">
@@ -191,7 +190,7 @@ export default function Dashboard() {
 									</div>
 								) : (
 									<>
-										<div className="max-h-80 overflow-y-auto pr-2">
+										<div className="max-h-96 overflow-y-auto pr-2">
 											<ul className="space-y-3">
 												{recent.map((a, idx) => (
 													<li key={a.id} className="group/item animate-fade-in-up" style={{ animationDelay: `${100 + idx * 50}ms` }}>
@@ -259,7 +258,7 @@ export default function Dashboard() {
 										<p className="text-sm text-slate-400 dark:text-slate-500 mt-1">Create your first quiz to get started!</p>
 									</div>
 								) : (
-									<div className="max-h-80 overflow-y-auto pr-2">
+									<div className="max-h-96 overflow-y-auto pr-2">
 										<ul className="space-y-3">
 											{displayedQuizzes.map((q, idx) => (
 												<li key={q.id} className="group/item animate-fade-in-up" style={{ animationDelay: `${100 + idx * 50}ms` }}>
