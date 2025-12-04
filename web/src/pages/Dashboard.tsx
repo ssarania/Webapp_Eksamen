@@ -14,10 +14,22 @@ interface Attempt {
 	timestamp: string
 }
 
+interface QuizAttempt {
+	id: number
+	userId: number
+	userName?: string
+	score: number
+	totalQuestions: number
+	percentage: number
+	attemptedAt: string
+	completedAt?: string | null
+}
+
 export default function Dashboard() {
 	const { user } = useAuth()
 	const [quizzes, setQuizzes] = useState<QuizSummary[]>([])
 	const [attempts, setAttempts] = useState<Attempt[]>([])
+	const [quizAttemptsMap, setQuizAttemptsMap] = useState<Record<number, QuizAttempt[]>>({})
 	const [deletingQuizId, setDeletingQuizId] = useState<number | null>(null)
 	
 
@@ -26,6 +38,20 @@ export default function Dashboard() {
 			try {
 				const quizList = await quizService.getMyQuizzes()
 				setQuizzes(quizList)
+				
+				// Load attempts for each quiz (excluding own attempts)
+				const attemptsMap: Record<number, QuizAttempt[]> = {}
+				for (const quiz of quizList) {
+					try {
+						const quizAttempts = await attemptService.getQuizAttempts(quiz.id)
+						// Filter out attempts by current user
+						attemptsMap[quiz.id] = quizAttempts.filter(attempt => attempt.userId !== user?.id)
+					} catch (err) {
+						console.error(`Failed to load attempts for quiz ${quiz.id}:`, err)
+						attemptsMap[quiz.id] = []
+					}
+				}
+				setQuizAttemptsMap(attemptsMap)
 				
 				// Load user attempts if logged in
 				if (user) {
@@ -77,6 +103,9 @@ export default function Dashboard() {
 	const totalAttempts = attempts.length
 	const recent = attempts.slice(0, 15)
 	const displayedQuizzes = quizzes.slice(0, 15)
+	
+	// Get total attempts on user's quizzes from other people
+	const othersAttemptsCount = Object.values(quizAttemptsMap).reduce((sum, attempts) => sum + attempts.length, 0)
 
 	return (
 		<div className="min-h-screen bg-gradient-to-b from-white via-blue-50/30 to-white py-12 relative overflow-hidden">
@@ -128,7 +157,7 @@ export default function Dashboard() {
 							<div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-transparent dark:from-purple-900/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 							<div className="relative">
 								<div className="flex items-center justify-between mb-4">
-									<div className="text-sm font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">Total Attempts</div>
+									<div className="text-sm font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">Your Attempts</div>
 									<div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white shadow-md">
 										<svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
 											<path d="M7 3a1 1 0 000 2h6a1 1 0 000-2H7zM4 7a1 1 0 011-1h10a1 1 0 011 1v10a1 1 0 01-1 1H5a1 1 0 01-1-1V7z" />
@@ -143,13 +172,13 @@ export default function Dashboard() {
 						</div>
 					</div>
 
-					{/* Questions Answered Card */}
+					{/* Others Attempts Card */}
 					<div className="group animate-fade-in-up delay-300">
 						<div className="relative h-full bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-8 border border-slate-100 dark:border-slate-700 transition-all duration-300 hover:shadow-2xl hover:scale-105 cursor-default">
 							<div className="absolute inset-0 bg-gradient-to-br from-pink-50 to-transparent dark:from-pink-900/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 							<div className="relative">
 								<div className="flex items-center justify-between mb-4">
-									<div className="text-sm font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">Questions Answered</div>
+									<div className="text-sm font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">Attempts on Your Quizzes</div>
 									<div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center text-white shadow-md">
 										<svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
 											<path d="M7 10l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
@@ -158,9 +187,9 @@ export default function Dashboard() {
 									</div>
 								</div>
 								<div className="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white mb-2">
-									{attempts.reduce((sum, a) => sum + a.total, 0)}
+									{othersAttemptsCount}
 								</div>
-								<p className="text-sm text-slate-500 dark:text-slate-400">Total questions answered across all attempts</p>
+								<p className="text-sm text-slate-500 dark:text-slate-400">Attempts by other users on your quizzes</p>
 							</div>
 						</div>
 					</div>
@@ -300,6 +329,16 @@ export default function Dashboard() {
 																</div>
 															</div>
 														</div>
+														
+														{/* Attempts count on this quiz */}
+														{(quizAttemptsMap[q.id] || []).length > 0 && (
+															<div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-500 flex items-center gap-2">
+																<span className="text-lg">👥</span>
+																<span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+																	Attempts by others: {(quizAttemptsMap[q.id] || []).length}
+																</span>
+															</div>
+														)}
 													</div>
 												</li>
 											))}
