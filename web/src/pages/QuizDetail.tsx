@@ -263,19 +263,18 @@ export default function QuizDetail() {
 												<div className={`w-6 h-6 rounded-full flex items-center justify-center ${isRight ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>{isRight ? '✓' : '✕'}</div>
 												<div className="flex-1">
 													<div className="font-medium">{q.text}</div>
-													{isRight ? (
-														// Correct: show only explanation (if any)
-														q.explanation ? (
-															<div className="mt-1 text-sm text-slate-600">{q.explanation}</div>
-														) : null
-													) : (
-														// Wrong: show your answer, correct answer, and explanation (if any)
-														<div className="mt-1 space-y-1 text-sm text-slate-600">
+													{/* Always show correct answer and explanation */}
+													<div className="mt-1 space-y-1 text-sm text-slate-600">
+														{!isRight && (
 															<div><strong>Your answer:</strong> {q.options.find((o: any) => o.id === sel)?.text ?? '—'}</div>
-															<div><strong>Correct answer:</strong> {correct?.text ?? '—'}</div>
-															{q.explanation ? <div className="mt-1">{q.explanation}</div> : null}
-														</div>
-													)}
+														)}
+														<div><strong>Correct answer:</strong> {correct?.text ?? '—'}</div>
+														{q.explanation && (
+															<div className="mt-3 pt-3 border-t border-slate-300 dark:border-slate-600">
+																<strong>Description:</strong> {q.explanation}
+															</div>
+														)}
+													</div>
 												</div>
 											</div>
 										)
