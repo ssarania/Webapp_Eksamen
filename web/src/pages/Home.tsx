@@ -190,10 +190,10 @@ export default function Home() {
 
 								{/* Content */}
 								<h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3 drop-shadow-md">
-									Local-First
+									Track Your Progress
 								</h3>
 								<p className="text-slate-700 dark:text-slate-300 leading-relaxed flex-grow font-medium drop-shadow-sm">
-									All quizzes and attempts are stored in your browser's localStorage under "My Quizzes". No server needed. Perfect for classrooms, students and demos.
+									Review your quiz attempts, track performance over time, and analyze your learning progress. View detailed statistics and identify areas for improvement with comprehensive analytics.
 								</p>
 
 								{/* Hover Arrow */}
@@ -217,10 +217,10 @@ export default function Home() {
 
 								{/* Content */}
 								<h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3 drop-shadow-md">
-									Easy to Extend
+									Smart Quiz Features
 								</h3>
 								<p className="text-slate-700 dark:text-slate-300 leading-relaxed flex-grow font-medium drop-shadow-sm">
-									Built with React + TypeScript and ASP.NET Core 8. Clean architecture ready for scale.
+									Take quizzes as a guest or sign in to save progress. Get instant feedback with detailed explanations, share public quizzes, and manage your own quiz library with ease.
 								</p>
 
 								{/* Hover Arrow */}
